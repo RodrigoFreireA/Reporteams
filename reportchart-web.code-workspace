@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "ReportChart Desktop",
+			"path": "./desktop"
+		},
+		{
+			"path": "../reportchart-local-test"
+		}
+	],
+	"settings": {}
+}

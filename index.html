@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark" data-palette="teal">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ReportChart Web</title>
+  <link rel="icon" href="/static/reportchart-favicon.svg" type="image/svg+xml">
+  <script src="/static/vendor/plotly-2.32.0.min.js"></script>
+  <script>
+    window.Plotly || document.write('<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"><\/script>');
+  </script>
+  <link rel="stylesheet" href="/static/css/app.css?v=planner-rules-visual-20260909">
+</head>
+
+<body class="public-mode">
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Processando dados…</div>
+</div>
+
+<!-- Sidebar overlay (fecha ao clicar fora) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Topbar -->
+<div class="topbar">
+  <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()" aria-label="Menu">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <line x1="3" y1="6"  x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <a class="topbar-brand-link" href="/biblioteca" onclick="openLibraryScreen(); return false;" aria-label="Abrir biblioteca">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M3 3h18v4H3V3zm0 6h12v4H3V9zm0 6h8v4H3v-4zm14 1l3 3-3 3v-2h-4v-2h4v-2z"/></svg>
+    </div>
+    <span class="app-name">ReportChart</span>
+  </a>
+  <span class="sprint-badge" id="sprintBadge"></span>
+  <div class="topbar-user hidden" id="topbarUserWrap">
+    <span class="topbar-user-name" id="topbarUserName"></span>
+    <button class="btn-topbar" id="btnLogout" onclick="logout()">Sair</button>
+  </div>
+
+  <div class="topbar-actions">
+    <button class="btn-upload-new" id="btnComparative" onclick="openComparativeScreen()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M4 19V5"/>
+        <path d="M20 19V5"/>
+        <path d="M8 8h8"/>
+        <path d="M8 16h8"/>
+        <path d="M10 5 7 8l3 3"/>
+        <path d="m14 13 3 3-3 3"/>
+      </svg>
+      <span>Comparativo</span>
+    </button>
+    <button class="btn-upload-new" id="btnConsolidated" onclick="openConsolidatedScreen()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M3 3v18h18"/>
+        <path d="M7 15h3v3H7zM12 9h3v9h-3zM17 5h3v13h-3z"/>
+      </svg>
+      <span>Relatorio</span>
+    </button>
+    <button class="btn-upload-new" id="btnAdminUsers" onclick="openAdminUsers()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+        <circle cx="8.5" cy="7" r="4"/>
+        <path d="M20 8v6M23 11h-6"/>
+      </svg>
+      <span>Usuarios</span>
+    </button>
+    <button class="btn-upload-new" id="btnTeams" onclick="openTeamsScreen()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/>
+        <path d="M3 20c0-3.2 2.4-5 6-5s6 1.8 6 5M15 15c3.4.2 5.3 1.8 5.7 4.5"/>
+      </svg>
+      <span>Equipes</span>
+    </button>
+    <button class="btn-upload-new" id="btnPlannerRules" onclick="showRulesScreen()"><span>Regras do Planner</span></button>
+    <button class="btn-upload-new" id="btnUploadNew" onclick="openLibraryScreen()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+      </svg>
+      <span>Biblioteca</span>
+    </button>
+
+    <!-- Palette picker -->
+    <div class="palette-btn-wrap" id="paletteBtnWrap">
+      <button class="palette-btn" id="paletteBtn" title="Paleta de cores" onclick="togglePalettePanel()">
+        <div class="palette-dot"></div>
+        <div class="palette-dot2"></div>
+      </button>
+      <div class="palette-panel" id="palettePanel">
+        <div class="palette-panel-title">Paleta de cores</div>
+        <div class="palette-grid" id="paletteGrid"></div>
+        <div class="palette-sep"></div>
+        <div class="palette-panel-title2">Tema</div>
+        <div class="theme-row">
+          <button class="theme-btn" id="btnThemeDark"  onclick="setTheme('dark')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            Dark
+          </button>
+          <button class="theme-btn" id="btnThemeLight" onclick="setTheme('light')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+            Light
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Public experience views -->
+<div class="public-view-slot" id="landingView"></div>
+<div class="public-view-slot hidden" id="rulesView"></div>
+<!-- Layout -->
+<div class="layout" id="appLayout">
+  <!-- Sidebar -->
+  <nav class="sidebar hidden" id="sidebar">
+    <div class="sidebar-section-label">Visualizações</div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main" id="mainArea">
+
+    <!-- Auth screen -->
+    <div class="auth-screen" id="authScreen">
+      <div class="auth-card">
+        <div class="auth-visual">
+          <a class="auth-brand" href="/" onclick="showLandingScreen(); return false;" aria-label="Voltar para a apresentação"><span class="auth-brand-mark">▥</span><span>Report<span>Chart</span></span></a>
+          <div class="auth-visual-copy"><span class="public-eyebrow"><span class="public-eyebrow-dot"></span> Métricas que contam</span><h1>Clareza para o fluxo da sua equipe.</h1><p>Entre para transformar o export do Planner em uma leitura objetiva de entrega, tempo e escopo.</p></div>
+          <div class="auth-signal-grid"><div><strong>46%</strong><span>eficiência de fluxo</span></div><div><strong>3,2</strong><span>dias de cycle time</span></div><div><strong>82%</strong><span>HU com SP mapeado</span></div></div>
+        </div>
+        <div class="auth-form-panel">
+          <button class="auth-back" type="button" onclick="showLandingScreen()">← Voltar para apresentação</button>
+          <div class="auth-kicker">Área segura</div>
+          <div class="auth-title" id="authTitle">Entrar</div>
+          <div class="auth-sub" id="authSub">Acesse sua área para salvar e abrir dashboards por usuário.</div>
+          <form class="auth-form" id="authForm">
+            <div class="auth-field hidden" id="displayNameFieldWrap">
+              <label for="displayNameInput">Nome</label>
+              <input type="text" id="displayNameInput" autocomplete="name" maxlength="120"/>
+            </div>
+            <div class="auth-field">
+              <label for="emailInput">Usuário ou E-mail</label>
+              <input type="text" id="emailInput" autocomplete="username" required/>
+            </div>
+            <div class="auth-field">
+              <label for="passwordInput">Senha</label>
+              <input type="password" id="passwordInput" autocomplete="current-password" required/>
+            </div>
+            <button class="auth-submit" id="authSubmitBtn" type="submit">Entrar <span>→</span></button>
+          </form>
+          <div class="upload-error" id="authError"></div>
+          <div class="auth-note hidden" id="authNote"></div>
+          <div class="auth-footer-note"><span></span> Seus dashboards ficam vinculados ao seu usuário.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload screen -->
+    <div class="upload-screen hidden" id="uploadScreen">
+      <div class="home-panel">
+      <div class="upload-card">
+        <aside class="roadmap-upload-panel">
+          <div class="roadmap-upload-head">
+            <div>
+              <span>Roadmaps</span>
+              <strong>Salvos</strong>
+            </div>
+            <button class="roadmap-add-btn" type="button" onclick="toggleRoadmapManualForm()" aria-label="Adicionar roadmap">+</button>
+          </div>
+          <select id="savedRoadmapSelect" class="roadmap-saved-list" size="6">
+            <option value="">Usar roadmap do Planner</option>
+          </select>
+          <div class="roadmap-saved-meta" id="savedRoadmapMeta">Nenhum roadmap salvo selecionado.</div>
+          <button class="btn-small roadmap-refresh-btn" type="button" onclick="loadSavedRoadmaps()">Atualizar lista</button>
+          <div class="roadmap-add-panel hidden" id="roadmapAddPanel">
+            <div class="roadmap-add-title">Novo roadmap</div>
+            <div class="roadmap-save-fields">
+              <label>Nome
+                <input type="text" id="roadmapSaveTitleInput" maxlength="160" placeholder="Ex.: CX - Roadmap inicial"/>
+              </label>
+              <label>Data
+                <input type="date" id="roadmapSaveDateInput"/>
+              </label>
+            </div>
+            <textarea id="roadmapPasteInput" spellcheck="false" placeholder="Data&#9;Goal&#9;Marco&#10;01/12/2024&#9;(dez/24)&#9;Inicio do Projeto..."></textarea>
+            <div class="roadmap-import-actions">
+              <button class="btn-small" type="button" onclick="previewRoadmapPaste()">Prévia</button>
+              <button class="btn-small" type="button" onclick="clearRoadmapPaste()">Limpar</button>
+            </div>
+            <div class="roadmap-import-status" id="roadmapPasteStatus">Cole um roadmap para salvar e reutilizar.</div>
+            <div class="roadmap-paste-preview" id="roadmapPastePreview"></div>
+          </div>
+        </aside>
+        <section class="upload-main-panel">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/>
+              <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <div class="upload-title">Abrir relatório Planner</div>
+          <div class="upload-sub">Carregue a exportação bruta do Microsoft Planner para visualizar os dados interativamente.</div>
+          <div class="upload-format" role="radiogroup" aria-label="Formato do Excel">
+            <label class="upload-format-option">
+              <input type="radio" name="plannerFormat" value="teams_new" checked />
+              <span>Novo Planner</span>
+            </label>
+            <label class="upload-format-option">
+              <input type="radio" name="plannerFormat" value="legacy" />
+              <span>Antigo Planner</span>
+            </label>
+          </div>
+          <div class="upload-team-field">
+            <label for="uploadTeamSelect">Equipe da sprint</label>
+            <select id="uploadTeamSelect">
+              <option value="">Sem equipe (relatorio legado)</option>
+            </select>
+            <div class="upload-check-note">A equipe define a duracao esperada da sprint e fica registrada no dashboard.</div>
+          </div>
+          <div class="drop-zone" id="dropZone">
+            <input type="file" id="fileInput" accept=".xlsx"/>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--muted);margin:0 auto;display:block">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+            <div class="dz-text">
+              <strong>Arraste o arquivo ou clique para selecionar</strong>
+              Exportação do Microsoft Planner
+            </div>
+            <span class="dz-ext">.xlsx</span>
+          </div>
+          <label class="upload-check" for="ignoreFluxoContinuoInput">
+            <input type="checkbox" id="ignoreFluxoContinuoInput" />
+            <span>Ignorar tarefas com rótulo <code>.FLUXO.CONTINUO</code> nos cálculos</span>
+          </label>
+          <div class="upload-check-note">
+            Use quando o fluxo contínuo estiver distorcendo métricas de lead, cycle e aging.
+          </div>
+          <div class="upload-progress" id="uploadProgress">
+            <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
+            <div class="prog-text" id="progText">Enviando…</div>
+          </div>
+          <div class="upload-error" id="uploadError"></div>
+        </section>
+      </div>
+      <div class="library-card">
+        <div class="library-head">
+          <div>
+            <div class="library-title">Meus dashboards</div>
+            <div class="library-sub" id="librarySubtitle">Carregando dashboards salvos...</div>
+          </div>
+          <button class="btn-small" id="btnRefreshReports" onclick="loadReports()">Atualizar</button>
+        </div>
+        <div class="upload-error" id="reportsError"></div>
+        <div class="reports-grid" id="reportsList"></div>
+        <div class="reports-empty hidden" id="reportsEmpty">Nenhum dashboard salvo ainda. Envie um .xlsx para criar o primeiro snapshot.</div>
+      </div>
+      </div>
+    </div>
+
+    <div class="comparative-screen hidden" id="comparativeScreen">
+      <div class="comparative-layout">
+        <section class="admin-card comparative-picker-panel">
+          <div class="admin-card-title">Comparativo mensal</div>
+          <div class="admin-card-sub">Selecione ate 3 dashboards salvos do Planner para comparar snapshots de meses diferentes.</div>
+
+          <div class="report-builder-panel-section">
+            <div class="report-builder-section-head">
+              <div>
+                <div class="report-builder-section-title">Dashboards</div>
+                <div class="report-builder-section-sub" id="comparativeSelectionMeta">Nenhum dashboard selecionado.</div>
+              </div>
+              <button class="btn-small" type="button" onclick="loadReports().then(renderComparativePicker)">Atualizar</button>
+            </div>
+            <div class="upload-error" id="comparativeError"></div>
+            <div class="consolidated-report-list" id="comparativeReportList"></div>
+          </div>
+        </section>
+
+        <section class="comparative-workspace">
+          <div class="admin-card comparative-overview">
+            <div class="library-head comparative-toolbar">
+              <div>
+                <div class="library-title">Visao comparativa</div>
+                <div class="library-sub" id="comparativeOverviewMeta">Escolha de 1 a 3 dashboards para iniciar.</div>
+              </div>
+              <button class="btn-small" type="button" onclick="clearComparativeSelection()">Limpar</button>
+            </div>
+            <div class="comparative-selected-chips" id="comparativeSelectedChips"></div>
+            <div class="comparative-kpi-grid" id="comparativeKpiGrid"></div>
+          </div>
+
+          <div class="comparative-charts">
+            <section class="consolidated-chart-card">
+              <div class="consolidated-section-title">Entrega e escopo</div>
+              <div class="comparative-plot" id="comparativeDeliveryPlot"></div>
+            </section>
+            <section class="consolidated-chart-card">
+              <div class="consolidated-section-title">Tempo e fluxo</div>
+              <div class="comparative-plot" id="comparativeFlowPlot"></div>
+            </section>
+            <section class="consolidated-chart-card">
+              <div class="consolidated-section-title">Qualidade e previsibilidade</div>
+              <div class="comparative-plot" id="comparativeQualityPlot"></div>
+            </section>
+            <section class="consolidated-chart-card comparative-chart-card-wide">
+              <div class="comparative-chart-head">
+                <div class="consolidated-section-title">Entregas por pessoa</div>
+                <div class="comparative-chart-controls" id="comparativePeopleControls"></div>
+              </div>
+              <div class="comparative-plot comparative-people-plot" id="comparativePeoplePlot"></div>
+            </section>
+          </div>
+
+          <section class="admin-card comparative-table-card">
+            <div class="library-head">
+              <div>
+                <div class="library-title">Metricas detalhadas</div>
+                <div class="library-sub">Linhas por metrica e colunas por dashboard selecionado.</div>
+              </div>
+            </div>
+            <div class="admin-users-table-wrap" id="comparativeTableWrap"></div>
+          </section>
+        </section>
+      </div>
+    </div>
+
+    <div class="consolidated-screen hidden" id="consolidatedScreen">
+      <div class="report-builder-layout">
+        <section class="admin-card report-builder-panel">
+          <div class="admin-card-title">Montador de relatorio</div>
+          <div class="admin-card-sub">Escolha dashboards, graficos e tipos visuais. Depois encaixe os blocos nas paginas para imprimir em PDF.</div>
+
+          <div class="report-builder-panel-section">
+            <div class="report-builder-section-head">
+              <div>
+                <div class="report-builder-section-title">Dashboards</div>
+                <div class="report-builder-section-sub" id="reportBuilderSelectionMeta">Nenhum dashboard selecionado.</div>
+              </div>
+              <button class="btn-small" type="button" onclick="loadReports().then(renderConsolidatedPicker)">Atualizar</button>
+            </div>
+            <div class="upload-error" id="consolidatedError"></div>
+            <div class="consolidated-report-list" id="consolidatedReportList"></div>
+          </div>
+
+          <div class="report-builder-panel-section">
+            <div class="report-builder-section-title">Modo</div>
+            <div class="report-builder-control-grid">
+              <label class="report-builder-field" for="reportBuilderModeInput">
+                <span>Renderizacao</span>
+                <select id="reportBuilderModeInput" onchange="syncReportBuilderMode()">
+                  <option value="compare">Comparar selecionados</option>
+                  <option value="single">Dashboard unico</option>
+                </select>
+              </label>
+              <label class="report-builder-field" for="reportBuilderSingleReportInput">
+                <span>Dashboard unico</span>
+                <select id="reportBuilderSingleReportInput"></select>
+              </label>
+            </div>
+          </div>
+
+          <div class="report-builder-panel-section">
+            <div class="report-builder-section-head">
+              <div>
+                <div class="report-builder-section-title">Graficos</div>
+                <div class="report-builder-section-sub">Marque um ou mais graficos e escolha tipo/tamanho inicial.</div>
+              </div>
+            </div>
+            <div class="report-builder-chart-list" id="reportBuilderChartList"></div>
+            <button class="auth-submit" id="btnBuildConsolidated" type="button" onclick="addSelectedChartsToReportBuilder()">Adicionar selecionados</button>
+          </div>
+        </section>
+
+        <section class="admin-card report-builder-workspace">
+          <div class="library-head report-builder-toolbar">
+            <div class="report-builder-title-edit">
+              <label for="reportBuilderTitleInput">Nome do relatorio</label>
+              <input type="text" id="reportBuilderTitleInput" maxlength="160" value="Relatorio visual" oninput="syncReportBuilderTitle()" />
+              <div class="report-builder-save-status" id="reportBuilderSaveStatus">Nao salvo</div>
+            </div>
+            <div class="report-builder-actions">
+              <button class="btn-small" type="button" onclick="openReportBuilderLibrary()">Abrir salvo</button>
+              <button class="btn-small" type="button" onclick="openReportBuilderHistory()">Historico</button>
+              <button class="btn-small" type="button" onclick="saveReportBuilder()">Salvar</button>
+              <button class="btn-small" type="button" onclick="saveReportBuilder(true)">Salvar como</button>
+              <button class="btn-small" type="button" onclick="addReportBuilderPage()">Nova pagina</button>
+              <button class="btn-small" type="button" onclick="clearReportBuilder()">Limpar</button>
+              <button class="auth-submit report-builder-print-btn" type="button" onclick="printReportBuilder()">Imprimir / PDF</button>
+            </div>
+          </div>
+          <div class="report-builder-tabs" id="reportBuilderPageTabs"></div>
+          <div class="report-builder-pages" id="reportBuilderPages"></div>
+        </section>
+      </div>
+      <div class="report-builder-modal hidden" id="reportBuilderModal" onclick="handleReportBuilderModalBackdrop(event)">
+        <div class="report-builder-modal-card" role="dialog" aria-modal="true" aria-labelledby="reportBuilderModalTitle">
+          <div class="report-builder-modal-head">
+            <div>
+              <div class="report-builder-modal-title" id="reportBuilderModalTitle">Relatorios salvos</div>
+              <div class="report-builder-modal-sub" id="reportBuilderModalSub"></div>
+            </div>
+            <button class="btn-small" type="button" onclick="closeReportBuilderModal()">Fechar</button>
+          </div>
+          <div class="report-builder-modal-body" id="reportBuilderModalBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-screen hidden" id="adminScreen">
+      <div class="admin-layout">
+        <section class="admin-card">
+          <div class="admin-card-title" id="adminFormTitle">Novo usuario</div>
+          <div class="admin-card-sub" id="adminFormSub">Crie acessos individuais para sua equipe e defina quem tambem pode administrar usuarios.</div>
+          <form class="admin-form" id="adminUserForm">
+            <div class="auth-field">
+              <label for="adminDisplayNameInput">Nome</label>
+              <input type="text" id="adminDisplayNameInput" maxlength="120" required />
+            </div>
+            <div class="auth-field">
+              <label for="adminEmailInput">E-mail</label>
+              <input type="email" id="adminEmailInput" maxlength="320" required />
+            </div>
+            <div class="auth-field">
+              <label for="adminPasswordInput">Senha</label>
+              <input type="password" id="adminPasswordInput" minlength="10" />
+            </div>
+            <div class="auth-field">
+              <label for="adminRoleInput">Perfil</label>
+              <select id="adminRoleInput">
+                <option value="user">Usuario</option>
+                <option value="admin">Admin</option>
+                <option value="disabled">Desativado</option>
+              </select>
+            </div>
+            <div class="admin-form-note" id="adminPasswordHint">A senha inicial deve ter ao menos 12 caracteres, com letras e numeros, sem padroes obvios.</div>
+            <div class="upload-error" id="adminFormError"></div>
+            <div class="admin-form-actions">
+              <button class="auth-submit" id="adminSubmitBtn" type="submit">Criar usuario</button>
+              <button class="btn-small hidden" id="adminCancelBtn" type="button" onclick="resetAdminForm()">Cancelar</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="admin-card">
+          <div class="library-head">
+            <div>
+              <div class="library-title">Usuarios</div>
+              <div class="library-sub" id="adminUsersSubtitle">Carregando usuarios...</div>
+            </div>
+            <div class="library-actions">
+              <button class="btn-small" type="button" onclick="focusNewAdminUserForm()">Novo usuario</button>
+              <button class="btn-small" type="button" onclick="loadAdminUsers()">Atualizar</button>
+            </div>
+          </div>
+          <div class="upload-error" id="adminUsersError"></div>
+          <div class="admin-users-table-wrap" id="adminUsersList"></div>
+          <div class="reports-empty hidden" id="adminUsersEmpty">Nenhum usuario adicional cadastrado ainda.</div>
+        </section>
+      </div>
+    </div>
+
+    <div class="admin-screen hidden" id="teamScreen">
+      <div class="team-page-head">
+        <div>
+          <div class="eyebrow">CONFIGURACAO DO FLUXO</div>
+          <h1>Equipes e sprints</h1>
+          <p>Organize os boards por equipe e registre a duracao esperada de cada sprint sem alterar relatorios historicos.</p>
+        </div>
+        <button class="btn-small" type="button" onclick="showHomeScreen()">Voltar ao dashboard</button>
+      </div>
+      <div class="team-layout">
+        <section class="admin-card">
+          <div class="admin-card-title" id="teamFormTitle">Nova equipe</div>
+          <div class="admin-card-sub" id="teamFormSub">Crie uma equipe para associar novos uploads e administrar o ciclo da sprint.</div>
+          <form class="admin-form" id="teamForm">
+            <div class="auth-field">
+              <label for="teamNameInput">Nome da equipe</label>
+              <input type="text" id="teamNameInput" maxlength="120" placeholder="Ex.: Produto e Tecnologia" required />
+            </div>
+            <div class="auth-field">
+              <label for="teamProjectInput">Projeto</label>
+              <input type="text" id="teamProjectInput" maxlength="160" placeholder="Ex.: ReportChart" />
+            </div>
+            <div class="team-form-grid">
+              <div class="auth-field">
+                <label for="teamSprintDaysInput">Duracao da sprint</label>
+                <select id="teamSprintDaysInput">
+                  <option value="7">7 dias</option>
+                  <option value="10">10 dias</option>
+                  <option value="15" selected>15 dias</option>
+                  <option value="20">20 dias</option>
+                  <option value="30">30 dias</option>
+                  <option value="60">60 dias</option>
+                  <option value="custom">Personalizada</option>
+                </select>
+              </div>
+              <div class="auth-field hidden" id="teamCustomDaysWrap">
+                <label for="teamCustomDaysInput">Dias personalizados</label>
+                <input type="number" id="teamCustomDaysInput" min="1" max="366" value="15" />
+              </div>
+            </div>
+            <div class="auth-field">
+              <label for="teamSprintModeInput">Contagem</label>
+              <select id="teamSprintModeInput">
+                <option value="calendar">Dias corridos</option>
+                <option value="business">Dias uteis</option>
+              </select>
+            </div>
+            <label class="upload-check" for="teamActiveInput">
+              <input type="checkbox" id="teamActiveInput" checked />
+              <span>Equipe ativa para novos uploads</span>
+            </label>
+            <div class="upload-error" id="teamFormError"></div>
+            <div class="admin-form-actions">
+              <button class="auth-submit" id="teamSubmitBtn" type="submit">Criar equipe</button>
+              <button class="btn-small hidden" id="teamCancelBtn" type="button" onclick="resetTeamForm()">Cancelar</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="admin-card">
+          <div class="library-head">
+            <div>
+              <div class="library-title">Minhas equipes</div>
+              <div class="library-sub" id="teamsSubtitle">Carregando equipes...</div>
+            </div>
+            <button class="btn-small" type="button" onclick="loadTeams()">Atualizar</button>
+          </div>
+          <div class="upload-error" id="teamsError"></div>
+          <div class="team-list" id="teamsList"></div>
+          <div class="reports-empty hidden" id="teamsEmpty">Nenhuma equipe cadastrada ainda.</div>
+        </section>
+      </div>
+
+      <section class="admin-card team-members-card hidden" id="teamMembersCard">
+        <div class="library-head">
+          <div>
+            <div class="library-title" id="teamMembersTitle">Membros da equipe</div>
+            <div class="library-sub" id="teamMembersSubtitle">Adicione pessoas que poderao usar este board.</div>
+          </div>
+        </div>
+        <form class="team-member-form" id="teamMemberForm">
+          <select id="teamMemberUserInput"></select>
+          <select id="teamMemberRoleInput">
+            <option value="member">Membro</option>
+            <option value="admin">Administrador da equipe</option>
+          </select>
+          <button class="btn-small" type="submit">Adicionar membro</button>
+        </form>
+        <div class="upload-error" id="teamMembersError"></div>
+        <div class="admin-users-table-wrap" id="teamMembersList"></div>
+      </section>
+    </div>
+
+    <div class="admin-screen hidden" id="customChartScreen">
+      <div class="admin-layout">
+        <section class="admin-card">
+          <div class="admin-card-title" id="customChartFormTitle">Novo grafico customizado</div>
+          <div class="admin-card-sub" id="customChartFormSub">Monte uma visualizacao a partir dos datasets ja calculados pelo dashboard, sem mexer nos graficos nativos.</div>
+          <form class="admin-form" id="customChartForm">
+            <div class="auth-field">
+              <label for="customChartNameInput">Nome do grafico</label>
+              <input type="text" id="customChartNameInput" maxlength="160" required />
+            </div>
+            <div class="auth-field">
+              <label for="customChartGroupInput">Categoria no menu</label>
+              <select id="customChartGroupInput">
+                <option value="Resumo">Resumo</option>
+                <option value="Andamento">Andamento</option>
+                <option value="Distribuição">Distribuição</option>
+                <option value="Tempo">Tempo</option>
+              </select>
+            </div>
+            <div class="auth-field">
+              <label for="customChartSubtitleInput">Subtitulo</label>
+              <input type="text" id="customChartSubtitleInput" maxlength="255" />
+            </div>
+            <div class="auth-field">
+              <label for="customChartSourceInput">Fonte de dados</label>
+              <select id="customChartSourceInput"></select>
+            </div>
+            <div class="auth-field">
+              <label for="customChartMetricInput">Metrica</label>
+              <select id="customChartMetricInput"></select>
+            </div>
+            <div class="auth-field">
+              <label for="customChartTypeOptions">Tipos disponiveis</label>
+              <div class="admin-check-grid" id="customChartTypeOptions"></div>
+            </div>
+            <div class="auth-field">
+              <label for="customChartDefaultTypeInput">Tipo inicial</label>
+              <select id="customChartDefaultTypeInput"></select>
+            </div>
+            <div class="auth-field">
+              <label for="customChartSortInput">Ordenacao</label>
+              <select id="customChartSortInput">
+                <option value="metric_desc">Maior valor primeiro</option>
+                <option value="metric_asc">Menor valor primeiro</option>
+                <option value="label_asc">Nome A-Z</option>
+                <option value="label_desc">Nome Z-A</option>
+              </select>
+            </div>
+            <div class="auth-field">
+              <label for="customChartLimitInput">Limite de itens</label>
+              <input type="number" id="customChartLimitInput" min="1" max="50" placeholder="Opcional" />
+            </div>
+            <div class="auth-field">
+              <label for="customChartOrderInput">Ordem de exibicao</label>
+              <input type="number" id="customChartOrderInput" min="0" max="9999" value="0" />
+            </div>
+            <div class="auth-field">
+              <label for="customChartEnabledInput">Status</label>
+              <select id="customChartEnabledInput">
+                <option value="1">Ativo</option>
+                <option value="0">Inativo</option>
+              </select>
+            </div>
+            <div class="admin-form-note" id="customChartFormHint">V1 segura: apenas datasets e metricas homologadas. Sem regra livre, SQL ou codigo.</div>
+            <div class="upload-error" id="customChartFormError"></div>
+            <div class="admin-form-actions">
+              <button class="auth-submit" id="customChartSubmitBtn" type="submit">Criar grafico</button>
+              <button class="btn-small hidden" id="customChartCancelBtn" type="button" onclick="resetCustomChartForm()">Cancelar</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="admin-card">
+          <div class="library-head">
+            <div>
+              <div class="library-title">Graficos customizados</div>
+              <div class="library-sub" id="customChartsSubtitle">Carregando graficos...</div>
+            </div>
+            <button class="btn-small" type="button" onclick="loadAdminCustomCharts()">Atualizar</button>
+          </div>
+          <div class="upload-error" id="customChartsError"></div>
+          <div class="admin-users-table-wrap" id="customChartsList"></div>
+          <div class="reports-empty hidden" id="customChartsEmpty">Nenhum grafico customizado cadastrado ainda.</div>
+        </section>
+      </div>
+
+      <div class="profile-rules-wrap">
+        <section class="admin-card">
+          <div class="admin-card-title" id="profileRuleFormTitle">Novo perfil customizado</div>
+          <div class="admin-card-sub" id="profileRuleFormSub">Use o perfil extraido pelo sistema como base e sobreponha com regras adicionais quando precisar agrupar ou corrigir casos.</div>
+          <form class="admin-form" id="profileRuleForm">
+            <div class="auth-field">
+              <label for="profileRuleNameInput">Nome do perfil</label>
+              <input type="text" id="profileRuleNameInput" maxlength="80" required />
+            </div>
+            <div class="auth-field">
+              <label for="profileRuleBaseProfilesInput">Perfis base extraidos</label>
+              <input type="text" id="profileRuleBaseProfilesInput" maxlength="500" placeholder="Ex.: Devs; UX; Requisitos" />
+            </div>
+            <div class="auth-field">
+              <label for="profileRuleLabelsInput">Termos de rotulo</label>
+              <input type="text" id="profileRuleLabelsInput" maxlength="500" placeholder="Ex.: .dev; backend; frontend" />
+            </div>
+            <div class="auth-field">
+              <label for="profileRuleAssigneeInput">Termos de responsavel</label>
+              <input type="text" id="profileRuleAssigneeInput" maxlength="500" placeholder="Ex.: designer; qa; joao" />
+            </div>
+            <div class="auth-field">
+              <label for="profileRuleBucketInput">Termos de bucket</label>
+              <input type="text" id="profileRuleBucketInput" maxlength="500" placeholder="Ex.: gestao; em teste" />
+            </div>
+            <div class="auth-field">
+              <label for="profileRulePriorityInput">Prioridade</label>
+              <input type="number" id="profileRulePriorityInput" min="0" max="9999" value="100" />
+            </div>
+            <div class="auth-field">
+              <label for="profileRuleEnabledInput">Status</label>
+              <select id="profileRuleEnabledInput">
+                <option value="1">Ativo</option>
+                <option value="0">Inativo</option>
+              </select>
+            </div>
+            <div class="admin-form-note" id="profileRuleHint">A regra entra antes do perfil base extraido. Quanto menor a prioridade, mais cedo a regra e aplicada.</div>
+            <div class="upload-error" id="profileRulesFormError"></div>
+            <div class="admin-form-actions">
+              <button class="auth-submit" id="profileRuleSubmitBtn" type="submit">Criar perfil</button>
+              <button class="btn-small hidden" id="profileRuleCancelBtn" type="button" onclick="resetProfileRuleForm()">Cancelar</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="admin-card">
+          <div class="library-head">
+            <div>
+              <div class="library-title">Perfis customizados</div>
+              <div class="library-sub" id="profileRulesSubtitle">Carregando perfis...</div>
+            </div>
+            <button class="btn-small" type="button" onclick="loadAdminProfileRules()">Atualizar</button>
+          </div>
+          <div class="upload-error" id="profileRulesError"></div>
+          <div class="admin-users-table-wrap" id="profileRulesList"></div>
+          <div class="reports-empty hidden" id="profileRulesEmpty">Nenhum perfil customizado cadastrado ainda.</div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+      <div class="chart-header" id="chartHeader">
+        <div class="chart-title-row">
+          <div>
+            <div class="chart-title" id="chartTitle">—</div>
+            <div class="chart-subtitle" id="chartSubtitle"></div>
+          </div>
+        </div>
+        <div class="chart-toolbar">
+          <div class="chart-filters" id="chartFilters"></div>
+          <div class="chart-actions">
+            <button class="btn-small" id="btnGenerateSummary" type="button" onclick="generateDashboardSummary()">Resumo IA</button>
+            <div class="type-selector" id="typeSelector"></div>
+          </div>
+        </div>
+      </div>
+      <div class="warn-banner" id="warnBanner">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span id="warnText"></span>
+      </div>
+      <div class="summary-card" id="summaryCard">
+        <div class="summary-head">
+          <div>
+            <div class="summary-title" id="summaryTitle">Resumo do dashboard</div>
+            <div class="summary-meta" id="summaryMeta">Gere um resumo executivo a partir dos dados estruturados do dashboard.</div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn-small hidden" id="btnCopySummary" type="button" onclick="copyDashboardSummary()">Copiar</button>
+            <button class="btn-small hidden" id="btnHideSummary" type="button" onclick="hideDashboardSummary()">Ocultar</button>
+          </div>
+        </div>
+        <div class="summary-body">
+          <div class="summary-status hidden" id="summaryStatus">Gerando resumo...</div>
+          <div class="upload-error summary-error" id="summaryError"></div>
+          <div class="summary-content" id="summaryContent"></div>
+        </div>
+      </div>
+      <div class="chart-body" id="chartBody">
+        <div class="chart-plot-wrap" id="chartPlotWrap">
+          <div id="mainPlot" style="width:100%;height:100%;min-height:420px"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+
+<!-- Scripts — ordem de carregamento importa -->
+<script src="/static/js/config.js?v=roadmap-print-timeline-20260630"></script>   <!-- 1. constantes globais -->
+<script src="/static/js/utils.js?v=report-print-reflow-20260831"></script>    <!-- 2. estado global + helpers + apiRequest -->
+<script src="/static/js/ui.js?v=expanded-palette-picker-20260619"></script>       <!-- 3. tema e paleta -->
+<script src="/static/js/refs.js?v=team-management-20260909"></script>     <!-- 4. referências DOM (antes dos listeners) -->
+  <script src="/static/js/public.js?v=library-navigation-20260909"></script>     <!-- 4. referências DOM (antes dos listeners) -->
+<script src="/static/js/auth.js?v=library-navigation-20260909"></script>     <!-- 5. sessão e autenticação -->
+<script src="/static/js/reports.js?v=team-dashboard-navigation-20260909"></script>  <!-- 6. biblioteca de relatórios -->
+<script src="/static/js/admin.js?v=team-management-20260909"></script>    <!-- 7. painel admin -->
+<script src="/static/js/teams.js?v=team-management-20260909"></script>     <!-- 8. equipes e sprints -->
+<script src="/static/js/upload.js?v=team-management-20260909"></script>   <!-- 9. upload de arquivo -->
+<script src="/static/js/consolidated.js?v=builder-roadmap-layout-20260831"></script><!-- 9. montador de relatorio -->
+<script src="/static/js/comparative.js?v=team-management-20260909"></script><!-- 10. comparativo mensal -->
+<script src="/static/js/charts.js?v=report-print-reflow-20260831"></script>   <!-- 10. renderização de gráficos -->
+<script src="/static/js/dashboard.js?v=team-sidebar-clean-20260909"></script><!-- 11. dashboard principal -->
+<script src="/static/js/app.js?v=kpi-calendar-deadline-20260504"></script>      <!-- 12. init e resize -->
+
+</body>
+</html>

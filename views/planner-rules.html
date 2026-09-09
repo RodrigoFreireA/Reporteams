@@ -1,0 +1,120 @@
+<section class="public-page public-rules hidden" id="rulesScreen">
+  <header class="public-nav public-rules-nav">
+    <button class="public-back" type="button" onclick="showHomeScreen()" aria-label="Voltar ao dashboard">
+      <span aria-hidden="true">←</span> Voltar ao dashboard
+    </button>
+    <div class="rules-page-brand">
+      <span class="rules-brand-mark" aria-hidden="true">▰</span>
+      <span>Report<span>Chart</span></span>
+    </div>
+    <button class="public-nav-button" type="button" onclick="showHomeScreen()">Abrir dashboard <span aria-hidden="true">→</span></button>
+  </header>
+
+  <main class="rules-shell rules-shell-v2">
+    <section class="rules-hero-card">
+      <div class="rules-hero-copy">
+        <div class="public-eyebrow"><span class="public-eyebrow-dot"></span> Guia do Planner</div>
+        <h1>Prepare o board para<br><em>medir o fluxo de verdade.</em></h1>
+        <p>O ReportChart lê a exportação do Microsoft Planner. Esta página explica o padrão mínimo que o board precisa seguir para transformar tarefas em métricas confiáveis de entrega, tempo, escopo e qualidade.</p>
+        <div class="rules-hero-actions">
+          <a class="public-primary-button" href="#checklist">Ver checklist <span aria-hidden="true">↓</span></a>
+          <a class="public-secondary-button" href="#exportar">Como exportar <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+      <div class="rules-hero-status">
+        <div class="rules-status-kicker">Padrão recomendado</div>
+        <strong>Uma convenção<br>por equipe.</strong>
+        <div class="rules-status-line"><span></span><span></span><span></span><b>Board pronto para análise</b></div>
+        <p>Consistência no preenchimento vale mais do que complexidade.</p>
+      </div>
+    </section>
+
+    <section class="rules-quick-grid" aria-label="Resumo das regras">
+      <article><span class="rules-quick-number">01</span><strong>Identifique a HU</strong><p>Use um código estável no título de todas as tarefas.</p></article>
+      <article><span class="rules-quick-number">02</span><strong>Informe o tamanho</strong><p>Registre Story Points na HU, seguindo um único padrão.</p></article>
+      <article><span class="rules-quick-number">03</span><strong>Preserve o histórico</strong><p>Mova cartões e mantenha datas, buckets e status coerentes.</p></article>
+      <article><span class="rules-quick-number">04</span><strong>Exporte o board</strong><p>Baixe o Excel bruto do Planner antes de abrir o dashboard.</p></article>
+    </section>
+
+    <div class="rules-layout rules-layout-v2">
+      <aside class="rules-index rules-index-v2">
+        <span>Navegue pelo guia</span>
+        <a href="#essencial"><b>01</b> O essencial</a>
+        <a href="#exportar"><b>02</b> Exportar o board</a>
+        <a href="#titulos"><b>03</b> Títulos e HUs</a>
+        <a href="#story-points"><b>04</b> Story Points</a>
+        <a href="#rotulos"><b>05</b> Rótulos e perfis</a>
+        <a href="#fluxo"><b>06</b> Buckets e status</a>
+        <a href="#datas"><b>07</b> Datas e histórico</a>
+        <a href="#checklist"><b>08</b> Checklist final</a>
+      </aside>
+
+      <div class="rules-content rules-content-v2">
+        <section class="rules-detail-card" id="essencial">
+          <div class="rules-detail-head"><span class="rules-detail-number">01</span><div><span class="rules-card-kicker">Base do sistema</span><h2>O essencial para começar</h2></div></div>
+          <p>O sistema precisa relacionar uma tarefa a uma história, identificar em que etapa ela está e calcular quanto tempo levou até ser concluída. O preenchimento não precisa ser perfeito, mas precisa ser previsível.</p>
+          <div class="rules-two-columns">
+            <div class="rules-note rules-note-good"><strong>Faça</strong><span>Escolha um padrão de títulos, SP, rótulos e buckets e repita-o durante toda a sprint.</span></div>
+            <div class="rules-note rules-note-warn"><strong>Evite</strong><span>Misturar formatos, apagar tarefas ou mudar a convenção no meio do ciclo.</span></div>
+          </div>
+        </section>
+
+        <section class="rules-detail-card" id="exportar">
+          <div class="rules-detail-head"><span class="rules-detail-number">02</span><div><span class="rules-card-kicker">Antes de analisar</span><h2>Como exportar o board do Planner</h2></div></div>
+          <p>Envie sempre a exportação bruta. Não edite o Excel antes do upload: o ReportChart precisa das colunas e dos valores originais para reconstruir as datas e o fluxo.</p>
+          <div class="export-step-grid">
+            <div class="export-step"><span>1</span><div><strong>Abra o plano</strong><p>Acesse o board correto no Microsoft Planner e confirme a equipe e a sprint.</p></div></div>
+            <div class="export-step"><span>2</span><div><strong>Abra o menu</strong><p>Selecione os três pontos <code>…</code> no cabeçalho do plano.</p></div></div>
+            <div class="export-step"><span>3</span><div><strong>Exporte para Excel</strong><p>Escolha <b>Exportar plano para Excel</b> e aguarde o download.</p></div></div>
+            <div class="export-step"><span>4</span><div><strong>Faça o upload</strong><p>Na Biblioteca, selecione o formato do Planner e envie o arquivo <code>.xlsx</code>.</p></div></div>
+          </div>
+          <div class="rules-inline-tip"><span>i</span><p><strong>Importante:</strong> exporte o plano depois de atualizar os status e datas. O arquivo representa um retrato do board no momento do download.</p></div>
+        </section>
+
+        <section class="rules-detail-card" id="titulos">
+          <div class="rules-detail-head"><span class="rules-detail-number">03</span><div><span class="rules-card-kicker">Identificação</span><h2>Títulos e Histórias de Usuário</h2></div></div>
+          <p>O título é a principal fonte para encontrar uma HU e agrupar suas tarefas. Use um identificador único, curto e estável. O mesmo código deve aparecer em todas as tarefas relacionadas.</p>
+          <div class="rules-example-grid">
+            <div class="rules-example rules-example-good"><span>Recomendado</span><code>HU042 - Checkout com cartão [8SP]</code><code>HU042 - Validar antifraude</code><code>HU042 - Criar tela de erro</code></div>
+            <div class="rules-example rules-example-bad"><span>Evite</span><code>Validar pagamento</code><code>ajustes finais</code><code>história cartão nova</code></div>
+          </div>
+          <ul class="rules-list rules-list-v2"><li>Comece a história com <code>HU</code> e um número, por exemplo <code>HU042</code>.</li><li>Repita o identificador em cada tarefa da HU, preferencialmente no início do título.</li><li>Não renomeie a HU depois que o ciclo começou e não reutilize o mesmo número em outra história.</li></ul>
+        </section>
+
+        <section class="rules-detail-card" id="story-points">
+          <div class="rules-detail-head"><span class="rules-detail-number">04</span><div><span class="rules-card-kicker">Tamanho relativo</span><h2>Story Points</h2></div></div>
+          <p>Story Points representam o tamanho relativo da HU. Eles são usados para ponderar entrega, throughput e evolução de escopo. Para evitar dupla contagem, concentre o SP na história principal.</p>
+          <div class="rules-sp-table"><div><span>Formato recomendado</span><strong>[8SP]</strong><small>no título da HU</small></div><div><span>Alternativa aceita</span><strong>8 SP</strong><small>no rótulo ou campo configurado</small></div><div><span>Relação</span><strong>1 HU : N tarefas</strong><small>tarefas herdam a história</small></div></div>
+          <div class="rules-inline-tip rules-inline-tip-warn"><span>!</span><p><strong>Não duplique:</strong> evite colocar <code>[8SP]</code> na HU e <code>[3SP]</code>, <code>[5SP]</code> em tarefas filhas sem uma regra clara de decomposição.</p></div>
+        </section>
+
+        <section class="rules-detail-card" id="rotulos">
+          <div class="rules-detail-head"><span class="rules-detail-number">05</span><div><span class="rules-card-kicker">Classificação</span><h2>Rótulos, perfis e fluxo contínuo</h2></div></div>
+          <p>Rótulos ajudam a separar tipos de trabalho. Os marcadores de perfil no título têm prioridade quando o sistema precisa identificar quem executou ou qual natureza a tarefa possui.</p>
+          <div class="rules-tag-groups"><div><span>Perfis reconhecidos</span><div class="rules-tag-cloud"><code>.DEV</code><code>.ARQUITETURA</code><code>.REQUISITOS</code></div></div><div><span>Qualidade e exceções</span><div class="rules-tag-cloud"><code>.BUG</code><code>.IMPEDIMENTO</code><code>.FLUXO.CONTINUO</code></div></div></div>
+          <ul class="rules-list rules-list-v2"><li><code>.DEV</code>, <code>.ARQUITETURA</code> e <code>.REQUISITOS</code> alimentam a distribuição por perfil.</li><li><code>.BUG</code> e <code>.IMPEDIMENTO</code> identificam ocorrências que podem afetar qualidade e previsibilidade.</li><li><code>.FLUXO.CONTINUO</code> sinaliza trabalho que não pertence à sprint; use a opção de ignorar no upload se necessário.</li></ul>
+        </section>
+
+        <section class="rules-detail-card" id="fluxo">
+          <div class="rules-detail-head"><span class="rules-detail-number">06</span><div><span class="rules-card-kicker">Movimentação</span><h2>Buckets e status precisam contar a mesma história</h2></div></div>
+          <p>Os buckets representam as etapas do fluxo. Mova a tarefa pelo board conforme o trabalho avança; não use o nome da tarefa para simular status.</p>
+          <div class="rules-flow-track"><div><b>Backlog</b><span>aguardando início</span></div><i>→</i><div><b>Em andamento</b><span>trabalho ativo</span></div><i>→</i><div><b>Concluído</b><span>entrega finalizada</span></div></div>
+          <ul class="rules-list rules-list-v2"><li>Mantenha buckets estáveis entre sprints para permitir comparação histórica.</li><li>Separe backlog, trabalho ativo e concluído; não use um único bucket para tudo.</li><li>Conclua a tarefa pelo status do Planner, não apenas adicionando “feito” ao título.</li></ul>
+        </section>
+
+        <section class="rules-detail-card" id="datas">
+          <div class="rules-detail-head"><span class="rules-detail-number">07</span><div><span class="rules-card-kicker">Histórico</span><h2>Datas e alterações</h2></div></div>
+          <p>As métricas de lead time, cycle time, aging e previsibilidade dependem do histórico exportado pelo Planner. Quanto menos o histórico for reescrito, mais confiável será a leitura.</p>
+          <div class="rules-two-columns"><div class="rules-note rules-note-good"><strong>Preserve</strong><span>Data de criação, início, conclusão e o histórico de movimentação das tarefas.</span></div><div class="rules-note rules-note-warn"><strong>Não faça</strong><span>Apagar e recriar cartões para corrigir um título ou trocar a data manualmente.</span></div></div>
+        </section>
+
+        <section class="rules-checklist rules-checklist-v2" id="checklist">
+          <div class="rules-checklist-head"><div><div class="public-eyebrow">última conferência</div><h2>Checklist de uma sprint pronta</h2><p>Se todos os itens estiverem corretos, exporte o plano e envie o <code>.xlsx</code> na Biblioteca.</p></div><span class="rules-checklist-mark">✓</span></div>
+          <div class="check-grid check-grid-v2"><span>✓ Todas as tarefas têm título descritivo</span><span>✓ HUs usam identificador consistente</span><span>✓ SP está preenchido nas HUs</span><span>✓ Buckets representam o fluxo real</span><span>✓ Status e datas estão atualizados</span><span>✓ Rótulos seguem o padrão do time</span><span>✓ Tarefas contínuas estão identificadas</span><span>✓ O arquivo foi exportado do plano correto</span></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="public-footer"><span>ReportChart</span><span>Guia do Planner · atualizado para o fluxo de análise</span><button type="button" onclick="showHomeScreen()">Voltar ao dashboard</button></footer>
+</section>

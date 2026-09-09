@@ -1,0 +1,53 @@
+<!-- Public experience -->
+<section class="public-page public-landing" id="landingScreen">
+  <header class="public-nav">
+    <a class="public-brand" href="#" onclick="showLandingScreen(); return false;" aria-label="ReportChart início">
+      <span class="public-brand-mark">▥</span><span>Report<span>Chart</span></span>
+    </a>
+    <nav class="public-nav-links" aria-label="Navegação pública">
+      <a href="#exportar-board" onclick="showLandingScreen({ scrollTo: 'exportar-board' }); return false;">Como funciona</a>
+      <button class="public-nav-button" type="button" onclick="showPublicAuth()">Entrar</button>
+    </nav>
+  </header>
+  <main>
+    <section class="public-hero" id="como-funciona">
+      <div class="public-hero-copy">
+        <div class="public-eyebrow"><span class="public-eyebrow-dot"></span> Métricas que contam a história da entrega</div>
+        <h1>Transforme o Planner em <em>clareza</em> para decidir melhor.</h1>
+        <p class="public-hero-lead">O ReportChart organiza a entrega da sua sprint em indicadores de fluxo, escopo, tempo e qualidade — sem perder o contexto do trabalho.</p>
+        <div class="public-actions">
+          <button class="public-primary-button" type="button" onclick="showPublicAuth()">Entrar no ReportChart <span>→</span></button>
+        </div>
+        <div class="public-trust"><span>✓</span> Importe um export do Microsoft Planner e comece pela evidência.</div>
+      </div>
+      <div class="public-hero-visual" aria-label="Prévia de um painel de métricas">
+        <div class="public-glow"></div>
+        <div class="public-dashboard-preview">
+          <div class="preview-topline"><span class="preview-dot"></span><span class="preview-dot"></span><span class="preview-dot"></span><span class="preview-title">Sprint overview</span><span class="preview-date">últimos 14 dias</span></div>
+          <div class="preview-kpis"><div><small>Throughput</small><strong>18,4</strong><span>tarefas / semana</span></div><div><small>Flow efficiency</small><strong>46<span>%</span></strong><span>por tarefa</span></div><div><small>Cycle time</small><strong>3,2</strong><span>dias</span></div></div>
+          <div class="preview-chart"><div class="preview-chart-head"><span>Entrega acumulada</span><span class="preview-legend"><i></i> concluídas <b></b> pendentes</span></div><div class="preview-bars"><i style="height:26%"></i><i style="height:36%"></i><i style="height:44%"></i><i style="height:51%"></i><i style="height:68%"></i><i style="height:74%"></i><i style="height:88%"></i><i style="height:96%"></i></div><div class="preview-axis"><span>D1</span><span>D4</span><span>D7</span><span>D10</span><span>D14</span></div></div>
+          <div class="preview-footer"><span>Saúde do fluxo</span><strong><i></i> previsível</strong><span>•</span><span>HU com SP mapeado <b>82%</b></span></div>
+        </div>
+      </div>
+    </section>
+    <section class="public-value-grid">
+      <article><span class="public-card-icon">◒</span><h2>Enxergue o fluxo</h2><p>Lead time, cycle time, WIP e throughput em uma leitura que conecta esforço e resultado.</p></article>
+      <article><span class="public-card-icon">◇</span><h2>Converse sobre escopo</h2><p>HUs, Story Points e tarefas não previstas deixam as decisões de priorização mais objetivas.</p></article>
+      <article><span class="public-card-icon">↗</span><h2>Melhore continuamente</h2><p>Compare sprints, encontre gargalos e acompanhe se as mudanças realmente melhoraram a entrega.</p></article>
+    </section>
+    <section class="public-export-tutorial" id="exportar-board">
+      <div class="public-export-heading">
+        <div><span class="public-eyebrow">Como preparar o arquivo</span><h2>Exporte seu board do Planner em poucos passos.</h2><p>O ReportChart usa a planilha exportada pelo Microsoft Planner para transformar as tarefas da sprint em métricas de fluxo.</p></div>
+        <span class="public-export-badge">Excel .xlsx</span>
+      </div>
+      <div class="public-export-steps">
+        <article><span class="public-export-step">01</span><div><h3>Abra o plano</h3><p>Acesse o Microsoft Planner e entre no plano que deseja analisar.</p></div></article>
+        <article><span class="public-export-step">02</span><div><h3>Abra o menu do plano</h3><p>No cabeçalho do plano, selecione o menu <strong>...</strong> para ver as opções disponíveis.</p></div></article>
+        <article><span class="public-export-step">03</span><div><h3>Exporte como Excel</h3><p>Escolha <strong>Exportar como Excel</strong> e salve o arquivo na pasta de downloads.</p></div></article>
+        <article><span class="public-export-step">04</span><div><h3>Envie para o ReportChart</h3><p>Faça login, carregue o arquivo exportado e acompanhe os indicadores da sua entrega.</p></div></article>
+      </div>
+      <div class="public-export-actions"><span>Pronto para analisar?</span><a href="https://support.microsoft.com/pt-br/planner/export-a-plan-to-excel" target="_blank" rel="noopener">Ver tutorial oficial da Microsoft ↗</a></div>
+    </section>
+  </main>
+  <footer class="public-footer"><span>ReportChart</span><span>Visibilidade para entregar melhor.</span></footer>
+</section>

@@ -1,0 +1,21 @@
+{
+  email {$ACME_EMAIL}
+}
+
+(security_headers) {
+  header {
+    X-Content-Type-Options nosniff
+    X-Frame-Options DENY
+    Referrer-Policy strict-origin-when-cross-origin
+  }
+}
+
+:80 {
+  import security_headers
+  reverse_proxy app:8000
+}
+
+{$DOMAIN:localhost} {
+  import security_headers
+  reverse_proxy app:8000
+}
