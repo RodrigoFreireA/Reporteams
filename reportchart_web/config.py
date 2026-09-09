@@ -24,6 +24,8 @@ LOGIN_RATE_LIMIT_WINDOW_SECONDS = int(
 LOGIN_RATE_LIMIT_LOCKOUT_SECONDS = int(
     (os.environ.get("LOGIN_RATE_LIMIT_LOCKOUT_SECONDS") or "900").strip() or "900"
 )
+RATE_LIMIT_REDIS_URL = (os.environ.get("RATE_LIMIT_REDIS_URL") or "").strip()
+PLANNER_RETENTION_DAYS = int((os.environ.get("PLANNER_RETENTION_DAYS") or "365").strip() or "365")
 
 
 def bool_env(name: str, default: bool = False) -> bool:
@@ -111,6 +113,8 @@ def flask_config() -> dict[str, object]:
             "SESSION_COOKIE_SECURE", default=(APP_ENV == "production")
         ),
         "SESSION_COOKIE_DOMAIN": os.environ.get("SESSION_COOKIE_DOMAIN") or None,
+        "RATE_LIMIT_REDIS_URL": RATE_LIMIT_REDIS_URL,
+        "PLANNER_RETENTION_DAYS": PLANNER_RETENTION_DAYS,
         "ALLOW_SELF_REGISTRATION": False,
         "AI_SUMMARY_PROVIDER": (os.environ.get("AI_SUMMARY_PROVIDER") or "heuristic").strip().lower(),
         "AI_SUMMARY_MODEL": (os.environ.get("AI_SUMMARY_MODEL") or "gemma3:1b").strip(),

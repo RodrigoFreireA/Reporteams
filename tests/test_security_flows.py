@@ -144,7 +144,7 @@ class SecurityFlowTests(unittest.TestCase):
             app_module.db.session.commit()
             return report.id
 
-    def create_saved_roadmap(self, *, user_id: int, title: str = "Roadmap CX"):
+    def create_saved_roadmap(self, *, user_id: int, title: str = "Roadmap do produto"):
         items = [
             ["01/12/2024\nGoal: (dez/24)\nMarco: Inicio do Projeto", 10],
             ["15/01/2025\nGoal: (jan/25)\nMarco: Kickoff", -10],
@@ -172,7 +172,7 @@ class SecurityFlowTests(unittest.TestCase):
         )
 
     def test_sensitive_project_files_are_not_served(self):
-        for path in ("/.env", "/.env.dokploy.example", "/instance/reportchart.db", "/docs/analise-projeto.md"):
+        for path in ("/.env", "/instance/reportchart.db", "/docs/open-source-release.md"):
             response = self.client.get(path)
             self.assertEqual(response.status_code, 404, path)
 

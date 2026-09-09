@@ -279,7 +279,7 @@ class PlannerFormatTests(unittest.TestCase):
         df = pd.DataFrame(
             [
                 {
-                    "tarefa": "Roadmap do CX",
+                    "tarefa": "Roadmap do produto",
                     "notas": (
                         "2026-05-15\n"
                         "Disponibilizar primeira versao\n"
