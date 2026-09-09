@@ -26,9 +26,9 @@ git push -u origin feat/oracle-always-free
 1. Crie um novo servico `Docker Compose`.
 2. Conecte o provider do seu repositorio.
 3. Use o repositorio:
-   - `https://github.com/RodrigoFreireA/reportchart.git`
+   - `https://github.com/RodrigoFreireA/Reporteams.git`
 4. Use a branch:
-   - `feat/oracle-always-free`
+   - `main`
 5. Em `Compose File Path`, informe:
    - `docker-compose.dokploy-full.yml`
 
