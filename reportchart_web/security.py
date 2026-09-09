@@ -7,6 +7,8 @@ models. Flask request/session objects are used only at the HTTP boundary.
 from __future__ import annotations
 
 import secrets
+import hashlib
+import logging
 import time
 import unicodedata
 from functools import wraps
@@ -19,8 +21,18 @@ from .config import (
     LOGIN_RATE_LIMIT_MAX,
     LOGIN_RATE_LIMIT_WINDOW_SECONDS,
     PASSWORD_MIN_LENGTH,
+    RATE_LIMIT_REDIS_URL,
 )
 
+try:
+    import redis
+except ImportError:  # pragma: no cover - optional for local development
+    redis = None
+
+
+logger = logging.getLogger(__name__)
+_REDIS_CLIENT = None
+_REDIS_UNAVAILABLE = False
 
 LOGIN_FAILURES: dict[str, dict[str, object]] = {}
 
@@ -66,7 +78,34 @@ def login_rate_key(email: str) -> str:
     return f"{remote_addr}:{email[:320]}"
 
 
-def login_retry_after(email: str) -> int:
+def _redis_client():
+    global _REDIS_CLIENT, _REDIS_UNAVAILABLE
+    if _REDIS_UNAVAILABLE or not RATE_LIMIT_REDIS_URL or redis is None:
+        return None
+    if _REDIS_CLIENT is not None:
+        return _REDIS_CLIENT
+    try:
+        _REDIS_CLIENT = redis.Redis.from_url(
+            RATE_LIMIT_REDIS_URL,
+            decode_responses=True,
+            socket_connect_timeout=0.5,
+            socket_timeout=0.5,
+        )
+        _REDIS_CLIENT.ping()
+        return _REDIS_CLIENT
+    except Exception:
+        logger.warning("Redis indisponivel; usando rate limit local neste processo.")
+        _REDIS_CLIENT = None
+        _REDIS_UNAVAILABLE = True
+        return None
+
+
+def _redis_key(email: str, suffix: str) -> str:
+    digest = hashlib.sha256(login_rate_key(email).encode("utf-8")).hexdigest()
+    return f"reportchart:login:{digest}:{suffix}"
+
+
+def _memory_login_retry_after(email: str) -> int:
     if LOGIN_RATE_LIMIT_MAX <= 0:
         return 0
     now = time.monotonic()
@@ -88,7 +127,18 @@ def login_retry_after(email: str) -> int:
     return 0
 
 
-def record_login_failure(email: str) -> int:
+def login_retry_after(email: str) -> int:
+    client = _redis_client()
+    if client is not None:
+        try:
+            ttl = client.ttl(_redis_key(email, "lock"))
+            return max(1, int(ttl)) if ttl and ttl > 0 else 0
+        except Exception:
+            logger.warning("Falha no Redis; mantendo fallback local do rate limit.")
+    return _memory_login_retry_after(email)
+
+
+def _memory_record_login_failure(email: str) -> int:
     if LOGIN_RATE_LIMIT_MAX <= 0:
         return 0
     now = time.monotonic()
@@ -107,7 +157,34 @@ def record_login_failure(email: str) -> int:
     return 0
 
 
+def record_login_failure(email: str) -> int:
+    client = _redis_client()
+    if client is not None:
+        try:
+            attempts_key = _redis_key(email, "attempts")
+            attempts = int(client.incr(attempts_key))
+            if attempts == 1:
+                client.expire(attempts_key, LOGIN_RATE_LIMIT_WINDOW_SECONDS)
+            if attempts >= LOGIN_RATE_LIMIT_MAX:
+                client.set(
+                    _redis_key(email, "lock"),
+                    "1",
+                    ex=LOGIN_RATE_LIMIT_LOCKOUT_SECONDS,
+                )
+                return LOGIN_RATE_LIMIT_LOCKOUT_SECONDS
+            return 0
+        except Exception:
+            logger.warning("Falha no Redis; mantendo fallback local do rate limit.")
+    return _memory_record_login_failure(email)
+
+
 def clear_login_failures(email: str) -> None:
+    client = _redis_client()
+    if client is not None:
+        try:
+            client.delete(_redis_key(email, "attempts"), _redis_key(email, "lock"))
+        except Exception:
+            logger.warning("Falha ao limpar rate limit compartilhado.")
     LOGIN_FAILURES.pop(login_rate_key(email), None)
 
 
