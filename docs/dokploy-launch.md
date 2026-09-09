@@ -125,9 +125,11 @@ Sem HTTPS, use `SESSION_COOKIE_SECURE=0` apenas para teste temporario, senao o c
 ## Arquivos relevantes
 
 - `docker-compose.dokploy-full.yml`
-- `.env.dokploy.example`
 - `Dockerfile`
 - `app.py`
+
+As variáveis devem ser cadastradas diretamente como secrets/environment variables
+no Dokploy. Não copie valores de produção para um arquivo versionado.
 
 ## Referencias oficiais
 

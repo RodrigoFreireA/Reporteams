@@ -57,7 +57,8 @@ Se faltar capacidade para `2 OCPUs / 12 GB`, tente:
 - `docker-compose.oracle.yml`
 - `deploy/oracle/Caddyfile`
 - `deploy/oracle/setup-oracle-linux.sh`
-- `.env.oracle.example`
+
+O arquivo `.env` deve ser criado somente na VM e nunca versionado.
 
 ## Passo a passo
 
@@ -154,7 +155,7 @@ No servidor:
 cd /opt
 git clone SEU_REPOSITORIO reportchart-web
 cd reportchart-web
-cp .env.oracle.example .env
+touch .env
 ```
 
 Edite o `.env`:
