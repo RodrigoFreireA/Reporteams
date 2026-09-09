@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import os
-import urllib.parse
 
-from flask import Blueprint, g, jsonify, redirect, request
+from flask import Blueprint, g, jsonify, redirect, request, url_for
 
 
 def create_public_blueprint(index_html: str, views_dir: str) -> Blueprint:
@@ -20,13 +19,21 @@ def create_public_blueprint(index_html: str, views_dir: str) -> Blueprint:
         return read_html(index_html)
 
     @blueprint.get("/login")
+    def login_page():
+        return read_html(index_html)
+
     @blueprint.get("/regras-planner")
     @blueprint.get("/dashboard")
     @blueprint.get("/equipes")
     @blueprint.get("/biblioteca")
     def app_route():
-        if request.path in {"/regras-planner", "/equipes", "/biblioteca"} and not g.user:
-            return redirect(f"/login?next={urllib.parse.quote(request.path)}")
+        if not g.user:
+            if request.path == "/regras-planner":
+                return redirect(url_for("public.login_page", next="/regras-planner"))
+            if request.path == "/equipes":
+                return redirect(url_for("public.login_page", next="/equipes"))
+            if request.path == "/biblioteca":
+                return redirect(url_for("public.login_page", next="/biblioteca"))
         return read_html(index_html)
 
     @blueprint.get("/views/<view_name>.html")

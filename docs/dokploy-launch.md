@@ -26,9 +26,9 @@ git push -u origin feat/oracle-always-free
 1. Crie um novo servico `Docker Compose`.
 2. Conecte o provider do seu repositorio.
 3. Use o repositorio:
-   - `https://github.com/RodrigoFreireA/reportchart.git`
+   - `https://github.com/RodrigoFreireA/Reporteams.git`
 4. Use a branch:
-   - `feat/oracle-always-free`
+   - `main`
 5. Em `Compose File Path`, informe:
    - `docker-compose.dokploy-full.yml`
 
@@ -125,9 +125,11 @@ Sem HTTPS, use `SESSION_COOKIE_SECURE=0` apenas para teste temporario, senao o c
 ## Arquivos relevantes
 
 - `docker-compose.dokploy-full.yml`
-- `.env.dokploy.example`
 - `Dockerfile`
 - `app.py`
+
+As variáveis devem ser cadastradas diretamente como secrets/environment variables
+no Dokploy. Não copie valores de produção para um arquivo versionado.
 
 ## Referencias oficiais
 

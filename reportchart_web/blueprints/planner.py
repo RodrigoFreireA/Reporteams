@@ -20,6 +20,32 @@ from reportchart_web.security import csrf_required, login_required
 
 logger = logging.getLogger(__name__)
 
+MAX_XLSX_ZIP_MEMBERS = 2_000
+MAX_XLSX_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
+
+
+def _is_safe_xlsx_archive(path: str) -> bool:
+    """Reject malformed or oversized ZIP containers before Excel parsing."""
+    try:
+        with zipfile.ZipFile(path) as archive:
+            members = archive.infolist()
+            if len(members) > MAX_XLSX_ZIP_MEMBERS:
+                return False
+
+            total_size = 0
+            for member in members:
+                normalized_name = member.filename.replace("\\", "/")
+                if normalized_name.startswith("/") or ".." in normalized_name.split("/"):
+                    return False
+                if member.file_size < 0:
+                    return False
+                total_size += member.file_size
+                if total_size > MAX_XLSX_UNCOMPRESSED_BYTES:
+                    return False
+    except (OSError, ValueError, zipfile.BadZipFile, zipfile.LargeZipFile):
+        return False
+    return True
+
 
 @dataclass(frozen=True)
 class PlannerServices:
@@ -86,8 +112,8 @@ def create_planner_blueprint(services: PlannerServices) -> Blueprint:
                 selected_roadmap_items = services.parse_saved_items(selected_roadmap)
             else:
                 manual_roadmap_items = services.parse_manual_items(request.form.get("roadmap_json"))
-        except ValueError as exc:
-            return jsonify({"ok": False, "erro": str(exc)}), 400
+        except ValueError:
+            return jsonify({"ok": False, "erro": "Roadmap inválido."}), 400
 
         selected_team = None
         raw_team_id = str(request.form.get("team_id") or "").strip()
@@ -103,7 +129,7 @@ def create_planner_blueprint(services: PlannerServices) -> Blueprint:
         work_dir = tempfile.mkdtemp()
         input_path = os.path.join(work_dir, "input.xlsx")
         arquivo.save(input_path)
-        if not zipfile.is_zipfile(input_path):
+        if not zipfile.is_zipfile(input_path) or not _is_safe_xlsx_archive(input_path):
             shutil.rmtree(work_dir, ignore_errors=True)
             return jsonify({"ok": False, "erro": "Arquivo .xlsx inválido."}), 400
 
@@ -158,8 +184,8 @@ def create_planner_blueprint(services: PlannerServices) -> Blueprint:
                 "data": data,
                 "roadmap": services.serialize_roadmap(associated_roadmap) if associated_roadmap else None,
             })
-        except ValueError as exc:
-            return jsonify({"ok": False, "erro": str(exc)}), 400
+        except ValueError:
+            return jsonify({"ok": False, "erro": "Dados do Planner inválidos."}), 400
         except Exception:
             logger.exception("Falha ao processar upload do Planner")
             return jsonify({"ok": False, "erro": "Falha ao processar o arquivo."}), 500

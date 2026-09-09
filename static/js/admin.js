@@ -264,13 +264,18 @@ function getSelectedCustomChartTypes() {
 function syncCustomChartDefaultType(selectedDefaultType) {
   const checkedTypes = getSelectedCustomChartTypes();
   if (!checkedTypes.length) {
-    customChartDefaultTypeInput.innerHTML = '';
+    customChartDefaultTypeInput.replaceChildren();
     return '';
   }
   const safeDefault = checkedTypes.includes(selectedDefaultType) ? selectedDefaultType : checkedTypes[0];
-  customChartDefaultTypeInput.innerHTML = checkedTypes
-    .map(key => `<option value="${esc(key)}"${key === safeDefault ? ' selected' : ''}>${esc(CHART_TYPES[key]?.label || key)}</option>`)
-    .join('');
+  customChartDefaultTypeInput.replaceChildren();
+  checkedTypes.forEach(key => {
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = CHART_TYPES[key]?.label || key;
+    option.selected = key === safeDefault;
+    customChartDefaultTypeInput.append(option);
+  });
   return safeDefault;
 }
 
