@@ -47,25 +47,14 @@ def default_data_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def load_or_create_local_secret_key() -> str:
-    data_root = default_data_root()
-    os.makedirs(data_root, exist_ok=True)
-    secret_path = os.path.join(data_root, "secret.key")
-    try:
-        with open(secret_path, encoding="utf-8") as handle:
-            secret_key = handle.read().strip()
-        if len(secret_key) >= 32:
-            return secret_key
-    except OSError:
-        pass
+def generate_local_secret_key() -> str:
+    """Generate an ephemeral key for local desktop sessions.
 
-    secret_key = secrets.token_urlsafe(48)
-    try:
-        with open(secret_path, "w", encoding="utf-8") as handle:
-            handle.write(secret_key)
-    except OSError:
-        pass
-    return secret_key
+    Production deployments must provide APP_SECRET_KEY through a secret
+    manager. Desktop sessions intentionally expire when the process restarts;
+    this avoids persisting a signing secret as clear text on disk.
+    """
+    return secrets.token_urlsafe(48)
 
 
 def default_database_uri() -> str:
@@ -93,7 +82,7 @@ def secret_key_from_env() -> str:
     if secret_key:
         return secret_key
     if APP_ENV == "desktop" or getattr(sys, "frozen", False):
-        return load_or_create_local_secret_key()
+        return generate_local_secret_key()
     return secrets.token_urlsafe(48)
 
 

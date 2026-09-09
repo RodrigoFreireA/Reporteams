@@ -45,8 +45,8 @@ def create_admin_configuration_blueprint(services: AdminConfigurationServices) -
     def admin_create_custom_chart():
         try:
             normalized = services.normalize_chart(services.payload_from_request())
-        except ValueError as exc:
-            return jsonify({"ok": False, "erro": str(exc)}), 400
+        except ValueError:
+            return jsonify({"ok": False, "erro": "Dados do gráfico inválidos."}), 400
         available_types = normalized.pop("available_types")
         chart = CustomChart(created_by_user_id=g.user.id, **normalized)
         db.session.add(chart)
@@ -65,8 +65,8 @@ def create_admin_configuration_blueprint(services: AdminConfigurationServices) -
             return jsonify({"ok": False, "erro": "Grafico customizado nao encontrado."}), 404
         try:
             normalized = services.normalize_chart(services.payload_from_request(), current=chart)
-        except ValueError as exc:
-            return jsonify({"ok": False, "erro": str(exc)}), 400
+        except ValueError:
+            return jsonify({"ok": False, "erro": "Dados do gráfico inválidos."}), 400
         available_types = normalized.pop("available_types")
         for key, value in normalized.items():
             setattr(chart, key, value)
@@ -106,8 +106,8 @@ def create_admin_configuration_blueprint(services: AdminConfigurationServices) -
     def admin_create_profile_rule():
         try:
             normalized = services.normalize_rule(services.payload_from_request())
-        except ValueError as exc:
-            return jsonify({"ok": False, "erro": str(exc)}), 400
+        except ValueError:
+            return jsonify({"ok": False, "erro": "Dados do perfil inválidos."}), 400
         rule = ProfileRule(created_by_user_id=g.user.id, **normalized)
         db.session.add(rule)
         db.session.commit()
@@ -123,8 +123,8 @@ def create_admin_configuration_blueprint(services: AdminConfigurationServices) -
             return jsonify({"ok": False, "erro": "Perfil customizado nao encontrado."}), 404
         try:
             normalized = services.normalize_rule(services.payload_from_request(), current=rule)
-        except ValueError as exc:
-            return jsonify({"ok": False, "erro": str(exc)}), 400
+        except ValueError:
+            return jsonify({"ok": False, "erro": "Dados do perfil inválidos."}), 400
         for key, value in normalized.items():
             setattr(rule, key, value)
         db.session.commit()
