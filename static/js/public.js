@@ -99,8 +99,9 @@
     if (navigateTo) navigate(routeMap.login);
     document.body.classList.remove('public-mode');
     window.hidePublicViews();
-    ['sidebar', 'uploadScreen', 'adminScreen', 'teamScreen', 'customChartScreen', 'comparativeScreen', 'consolidatedScreen', 'dashboard']
+    ['sidebar', 'uploadScreen', 'adminScreen', 'teamScreen', 'customChartScreen', 'comparativeScreen', 'consolidatedScreen']
       .forEach(id => hide(get(id)));
+    get('dashboard')?.classList.remove('visible');
     show(get('authScreen'));
     get('emailInput')?.focus();
   };

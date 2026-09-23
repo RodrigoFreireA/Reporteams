@@ -12,6 +12,7 @@ function loadDashboard(data) {
   customChartScreen.classList.add('hidden');
   comparativeScreen.classList.add('hidden');
   consolidatedScreen.classList.add('hidden');
+  dashboardEl.classList.remove('hidden');
   dashboardEl.classList.add('visible');
   btnUploadNew.classList.add('visible');
   menuToggle.classList.remove('hidden');
