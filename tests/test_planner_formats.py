@@ -147,6 +147,30 @@ class PlannerFormatTests(unittest.TestCase):
         self.assertEqual(data["kpis"]["hu_count"], 1)
         self.assertEqual(data["burndown_sp"]["total_sp"], 3)
 
+    def test_teams_export_distinguishes_due_date_from_completion_date(self):
+        for sheet_name in ("Dados Consolidados", "Tarefas"):
+            with self.subTest(sheet=sheet_name):
+                wb = self._new_format_workbook()
+                tasks = wb["Dados Consolidados"]
+                tasks.title = sheet_name
+                tasks["N1"] = "Data de Conclusão"
+                tasks["J2"] = "2026-05-08"
+                tasks["K2"] = "2026-05-03"
+                tasks["N2"] = "2026-05-14"
+                path = self._save_workbook(wb)
+                try:
+                    data = compute_json(path, planner_format="teams_new")
+                finally:
+                    os.unlink(path)
+
+                self.assertEqual(data["kpis"]["done"], 1)
+                self.assertEqual(data["kpis"]["ct_task"], 11)
+                self.assertEqual(data["kpis"]["lt_task"], 13)
+                self.assertEqual(data["flow_metrics"]["throughput_total"], 1)
+                by_date = {row[0]: row for row in data["burndown"]["rows"]}
+                self.assertEqual(by_date["2026-05-13"][3], 2)
+                self.assertEqual(by_date["2026-05-14"][3], 1)
+
     def test_compute_json_extracts_hu_and_sp_from_task_title(self):
         wb = self._legacy_format_workbook()
         ws = wb["Tarefas"]

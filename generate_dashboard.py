@@ -1925,7 +1925,7 @@ def _metric_days(sprint_start, sprint_end):
         return [today], today, today + timedelta(days=1)
     if end < start:
         start, end = end, start
-    days_count = max(1, (end - start).days)
+    days_count = (end - start).days + 1
     return [start + timedelta(days=i) for i in range(days_count)], start, start + timedelta(days=days_count)
 
 

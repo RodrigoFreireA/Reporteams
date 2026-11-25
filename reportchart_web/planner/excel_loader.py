@@ -148,6 +148,13 @@ def load_base(path, planner_format="legacy"):
         if resolve_references and _looks_like_legacy(dataframe):
             workbook.close()
             return _load_legacy_tagged(path)
+        # In this Teams export, the two headers differ only in capitalization.
+        # Preserve the due date and map the actual completion before case folding.
+        columns = set(dataframe.columns)
+        if {"Data de conclusão", "Data de Conclusão"}.issubset(columns) and not (
+            {"concluído em", "date completed"} & {column.lower() for column in columns}
+        ):
+            dataframe = dataframe.rename(columns={"Data de Conclusão": "Concluído em"})
         if resolve_references:
             dataframe = _resolve_references(dataframe, workbook)
         plan_name, export_date = _teams_plan_meta(workbook)
