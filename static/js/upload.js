@@ -9,7 +9,10 @@ dropZone.addEventListener('drop',      e  => {
 });
 fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
 
-function handleFile(file) {
+let plannerUploadInProgress = false;
+
+async function handleFile(file) {
+  if (plannerUploadInProgress) return;
   if (!authState.authenticated) {
     showAuthScreen(authState.bootstrapRequired);
     return;
@@ -28,10 +31,6 @@ function handleFile(file) {
   const roadmapItems = buildRoadmapItemsFromRows(roadmapRows);
   updateRoadmapPasteStatus(roadmapRows);
   uploadError.classList.remove('visible');
-  uploadProgress.classList.add('visible');
-  progBar.style.width = '0%';
-  progText.textContent = 'Enviando arquivo...';
-  document.getElementById('loadingOverlay').classList.add('visible');
 
   const fd = new FormData();
   fd.append('arquivo', file);
@@ -56,47 +55,93 @@ function handleFile(file) {
     const inferredDate = roadmapSaveDateInput?.value || roadmapDateToIso(roadmapRows[0]?.date);
     if (inferredDate) fd.append('roadmap_project_date', inferredDate);
   }
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', '/upload');
-  if (authState.csrfToken) xhr.setRequestHeader('X-CSRF-Token', authState.csrfToken);
+  const overlay = document.getElementById('loadingOverlay');
+  plannerUploadInProgress = true;
+  try {
+    fd.set('preview_commitment', '1');
+    const preview = await sendPlannerUpload(fd, 'Lendo planilha...');
+    overlay.classList.remove('visible');
+    uploadProgress.classList.remove('visible');
+    const committed = await chooseSprintCommitment(preview.commitment_options || []);
+    if (committed === null) return;
 
-  xhr.upload.onprogress = e => {
-    if (e.lengthComputable)
-      progBar.style.width = Math.round(e.loaded / e.total * 60) + '%';
-  };
+    fd.delete('preview_commitment');
+    if (committed.length) fd.set('committed_hus', committed.join(','));
+    const body = await sendPlannerUpload(fd, 'Salvando dashboard...');
+    currentReportId = body.report?.id || null;
+    if (body.report) upsertReport(body.report);
+    if (body.roadmap) {
+      upsertSavedRoadmap(body.roadmap);
+      renderSavedRoadmapOptions(String(body.roadmap.id));
+      if (!selectedRoadmapId && roadmapItems.length) {
+        if (roadmapPasteInput) roadmapPasteInput.value = '';
+        if (roadmapSaveTitleInput) roadmapSaveTitleInput.value = '';
+        if (roadmapSaveDateInput) roadmapSaveDateInput.value = '';
+        localStorage.removeItem(ROADMAP_PASTE_STORAGE_KEY);
+        toggleRoadmapManualForm(false);
+        updateRoadmapPasteStatus();
+      }
+    }
+    renderReports();
+    progText.textContent = 'Pronto! Carregando dashboard...';
+    loadDashboard(body.data);
+  } catch (error) {
+    showUploadError(error.message || 'Erro inesperado. Tente novamente.');
+  } finally {
+    plannerUploadInProgress = false;
+    fileInput.value = '';
+  }
+}
 
-  xhr.onreadystatechange = () => {
-    if (xhr.readyState !== 4) return;
-    progBar.style.width = '100%';
-    try {
-      const body = JSON.parse(xhr.responseText);
-      if (xhr.status === 401) {
-        showAuthScreen(body.bootstrap_required === true);
-        showUploadError(body.erro || 'Sua sessao expirou.');
-        return;
-      }
-      if (!body.ok) { showUploadError(body.erro || 'Falha ao processar o arquivo.'); return; }
-      currentReportId = body.report?.id || null;
-      if (body.report) upsertReport(body.report);
-      if (body.roadmap) {
-        upsertSavedRoadmap(body.roadmap);
-        renderSavedRoadmapOptions(String(body.roadmap.id));
-        if (!selectedRoadmapId && roadmapItems.length) {
-          if (roadmapPasteInput) roadmapPasteInput.value = '';
-          if (roadmapSaveTitleInput) roadmapSaveTitleInput.value = '';
-          if (roadmapSaveDateInput) roadmapSaveDateInput.value = '';
-          localStorage.removeItem(ROADMAP_PASTE_STORAGE_KEY);
-          toggleRoadmapManualForm(false);
-          updateRoadmapPasteStatus();
-        }
-      }
-      renderReports();
-      progText.textContent = 'Pronto! Carregando dashboard...';
-      setTimeout(() => loadDashboard(body.data), 200);
-    } catch (_) { showUploadError('Erro inesperado. Tente novamente.'); }
+function sendPlannerUpload(formData, status) {
+  uploadProgress.classList.add('visible');
+  progBar.style.width = '0%';
+  progText.textContent = status;
+  document.getElementById('loadingOverlay').classList.add('visible');
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/upload');
+    xhr.responseType = 'json';
+    if (authState.csrfToken) xhr.setRequestHeader('X-CSRF-Token', authState.csrfToken);
+    xhr.upload.onprogress = event => {
+      if (event.lengthComputable) progBar.style.width = `${Math.round(event.loaded / event.total * 60)}%`;
+    };
+    xhr.onload = () => {
+      progBar.style.width = '100%';
+      const body = xhr.response;
+      if (xhr.status === 401) showAuthScreen(body?.bootstrap_required === true);
+      if (!body?.ok) return reject(new Error(body?.erro || 'Falha ao processar o arquivo.'));
+      resolve(body);
+    };
+    xhr.onerror = () => reject(new Error('Falha de conexão. Tente novamente.'));
+    xhr.send(formData);
+  });
+}
+
+function chooseSprintCommitment(options) {
+  const dialog = document.getElementById('commitmentDialog');
+  const list = document.getElementById('commitmentOptions');
+  const total = document.getElementById('commitmentTotal');
+  const save = document.getElementById('commitmentSave');
+  list.innerHTML = options.map(hu => {
+    const name = hu.name.replace(/\[\s*\d+\s*SP\s*\]/gi, '').trim();
+    return `<label><input type="checkbox" value="${esc(hu.id)}"><span>${esc(name || hu.id)}</span><strong>${esc(hu.sp)} SP</strong></label>`;
+  }).join('')
+    || '<p>Nenhuma HU com Story Points foi encontrada.</p>';
+  const checkboxes = Array.from(list.querySelectorAll('input'));
+  list.onchange = () => {
+    const sp = options.reduce((sum, hu, index) => sum + (checkboxes[index].checked ? hu.sp : 0), 0);
+    total.textContent = `${sp} SP selecionados`;
+    save.textContent = checkboxes.some(box => box.checked) ? 'Salvar dashboard' : 'Salvar sem compromisso';
   };
-  xhr.onerror = () => showUploadError('Erro de conexao. O servidor esta rodando?');
-  xhr.send(fd);
+  list.onchange();
+  return new Promise(resolve => {
+    dialog.returnValue = '';
+    dialog.addEventListener('close', () => {
+      resolve(dialog.returnValue === 'save' ? checkboxes.filter(box => box.checked).map(box => box.value) : null);
+    }, { once: true });
+    dialog.showModal();
+  });
 }
 
 function showUploadError(msg) {

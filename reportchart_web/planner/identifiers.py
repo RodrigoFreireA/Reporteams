@@ -32,6 +32,25 @@ def compact_hu_id(value):
     return re.sub(r"\s+", "", str(value or "")).upper()
 
 
+class InvalidSprintCommitment(ValueError):
+    """The requested sprint commitment cannot be matched to estimated HUs."""
+
+
+def parse_committed_hus(raw, hu_names, hu_storypoints):
+    if not raw or not raw.strip():
+        return None
+    ids = [part.upper() for part in re.split(r"[,;\s]+", raw.strip()) if part]
+    if not ids or any(not HU_LABEL_RE.fullmatch(hu) for hu in ids):
+        raise InvalidSprintCommitment("Informe os códigos das HUs, por exemplo HU122, HU123.")
+    ids = list(dict.fromkeys(ids))
+    for hu in ids:
+        if hu not in hu_names:
+            raise InvalidSprintCommitment(f"A HU {hu} não foi encontrada no arquivo.")
+        if hu not in hu_storypoints:
+            raise InvalidSprintCommitment(f"A HU {hu} não tem Story Points no arquivo.")
+    return ids
+
+
 @lru_cache(maxsize=4096)
 def extract_hu_from_labels(labels):
     if not labels or _lower(labels) in ("", "nan"):

@@ -2050,3 +2050,27 @@ body.public-mode .topbar,body.public-mode .layout{display:none!important}
 .rules-checklist-v2{padding:1.4rem 1.5rem;border:1px solid color-mix(in srgb,var(--accent-ll) 30%,var(--border));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--card)),var(--card))}.rules-checklist-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.rules-checklist-v2 h2{margin:.45rem 0 .35rem;color:var(--text-head);font-size:1.25rem}.rules-checklist-v2 p{color:var(--muted);font-size:.74rem;line-height:1.5}.rules-checklist-v2 p code{color:var(--accent-ll);font:700 .68rem ui-monospace,monospace}.rules-checklist-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:var(--accent-ll);color:#fff;font-size:1.25rem;font-weight:900}.check-grid-v2{grid-template-columns:repeat(2,1fr);gap:.5rem;margin-top:1.15rem}.check-grid-v2 span{padding:.7rem .8rem;border:1px solid color-mix(in srgb,var(--accent-ll) 14%,var(--border));border-radius:7px;background:color-mix(in srgb,var(--bg) 38%,transparent);color:var(--text);font-size:.7rem}
 @media(max-width:850px){.rules-hero-card{grid-template-columns:1fr}.rules-hero-status{max-width:420px}.rules-quick-grid{grid-template-columns:repeat(2,1fr)}.export-step-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.rules-page-brand{display:none}.rules-shell-v2{padding:1.5rem 0 3rem}.rules-hero-card{padding:1.35rem}.rules-hero-copy h1{font-size:2.45rem}.rules-quick-grid,.rules-two-columns,.rules-example-grid,.rules-sp-table,.rules-tag-groups,.check-grid-v2{grid-template-columns:1fr}.rules-detail-card{padding:1.1rem}.export-step-grid{grid-template-columns:1fr}.rules-flow-track{align-items:stretch;flex-direction:column}.rules-flow-track i{text-align:center;transform:rotate(90deg)}.rules-checklist-head{flex-direction:column}.rules-checklist-mark{display:none}}
+.commitment-dialog {
+  width: min(650px, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  margin: auto;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+}
+.commitment-dialog::backdrop { background: rgb(0 0 0 / .55); }
+.commitment-dialog h2 { margin: 0; color: var(--text-head); font-size: 1.15rem; }
+.commitment-dialog p { margin: .5rem 0 1rem; color: var(--muted); font-size: .82rem; }
+.commitment-options { max-height: 50vh; overflow-y: auto; border-block: 1px solid var(--border); }
+.commitment-options label { display: flex; align-items: start; gap: .65rem; padding: .6rem .35rem; cursor: pointer; }
+.commitment-options label + label { border-top: 1px solid var(--border); }
+.commitment-options label span { flex: 1; overflow-wrap: anywhere; }
+.commitment-options label strong { white-space: nowrap; }
+.commitment-actions { display: flex; align-items: center; justify-content: end; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }
+.commitment-actions output { margin-right: auto; font-variant-numeric: tabular-nums; }
+.commitment-actions .auth-submit { width: auto; margin: 0; padding: 0 1rem; }
+@media (max-width: 500px) {
+  .commitment-actions output { width: 100%; }
+}

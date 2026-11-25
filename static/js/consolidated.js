@@ -1270,7 +1270,8 @@ function renderBuilderMetricCards(target, data, chartId) {
       ['Desvio Cycle Time', fmt(flow.cycle_time_stddev, 1), 'dias'],
     ],
     scope_quality: [
-      ['Say/Do', pct(scope.say_do_ratio), 'SP'],
+      ['SP comprometidos', data.meta?.committed_hus?.length ? fmt(scope.committed_sp, 0) : 'Não informado', 'SP'],
+      ['Say/Do', pct(data.meta?.committed_hus?.length ? scope.say_do_ratio : null), 'SP'],
       ['Bugs/Ajustes', fmt(scope.bug_task_count, 0), 'tarefas'],
       ['Impedimentos', fmt(scope.impediment_task_count, 0), 'tarefas'],
       ['Scope creep', fmt(scope.scope_creep_tasks, 0), 'tarefas'],

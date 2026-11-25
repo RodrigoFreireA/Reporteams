@@ -47,6 +47,7 @@ from reportchart_web.planner.identifiers import (
     extract_hu_full_from_title as _extract_hu_full_from_title_cached,
     extract_hu_full_label as _extract_hu_full_label,
     hu_full_has_metadata as _hu_full_has_metadata,
+    parse_committed_hus,
     profile_label_from_title_marker as _profile_label_from_title_marker,
     profile_labels_from_title as _profile_labels_from_title_cached,
 )
@@ -828,17 +829,27 @@ def _precompute_burndown_sp(df, sprint_start, sprint_end, export_date, hu_storyp
     return result
 
 
-def _precompute_burndown_sp(df, sprint_start, sprint_end, export_date, hu_storypoints, hu_scope_events=None):
+def _precompute_burndown_sp(df, sprint_start, sprint_end, export_date, hu_storypoints, hu_scope_events=None, *, completion_dates=None):
     """
     Burndown por Story Points com suporte a HU nova marcada por [+Edd/mm].
     Colunas: [data, meta_revisada, a_realizar, escopo_acumulado, meta_original, sp_adicionado]
     """
-    dfw = df[(~df["is_backlog"]) & (df["hu"] != "")].copy()
-    bd_start, bd_end, days = _resolve_burndown_window(dfw, sprint_start, sprint_end)
+    dfw = df if completion_dates is not None else df[(~df["is_backlog"]) & (df["hu"] != "")]
+    bd_start, _, days = _resolve_burndown_window(dfw, sprint_start, sprint_end)
 
     total_sp = float(sum(hu_storypoints.values())) if hu_storypoints else 0.0
     if total_sp == 0:
         return [[None, None, None]] * days
+
+    if completion_dates is not None:
+        rows = []
+        for i in range(days):
+            day = bd_start + timedelta(days=i)
+            observed_day = min(day, export_date)
+            burned = sum(hu_storypoints[hu] for hu, done in completion_dates.items() if done and done <= observed_day)
+            ideal = round(_linear_burn_from(total_sp, i, 0, days - 1), 2)
+            rows.append([day.isoformat(), ideal, total_sp - burned, total_sp, ideal, 0.0])
+        return rows
 
     hu_scope_events = hu_scope_events or {}
 
@@ -2015,16 +2026,9 @@ def build_flow_metrics(df, sprint_start, sprint_end, kpis):
     }
 
 
-def build_scope_quality_metrics(df, hu_storypoints, kpis):
-    committed_sp = float(kpis.get("storypoints") or (sum(hu_storypoints.values()) if hu_storypoints else 0) or 0)
+def build_scope_quality_metrics(df, hu_storypoints, kpis, *, committed_sp=None, delivered_sp=None):
+    board_sp = sum(hu_storypoints.values())
     weights = _task_storypoint_weights(df, hu_storypoints)
-
-    delivered_sp = 0.0
-    if hu_storypoints:
-        for hu, sp in hu_storypoints.items():
-            grp = df[df["hu"].fillna("").astype(str).str.upper() == str(hu).upper()]
-            if not grp.empty and bool(grp["done_kpi"].all()):
-                delivered_sp += float(sp or 0)
 
     hu_sp_values = [float(v) for v in hu_storypoints.values() if v]
     bug_df = df[df.apply(_row_has_bug_or_adjustment, axis=1)].copy()
@@ -2038,8 +2042,8 @@ def build_scope_quality_metrics(df, hu_storypoints, kpis):
     creep_sp = round(sum(weights.get(idx, 0.0) for idx in creep_df.index), 2) if weights else 0.0
 
     return {
-        "committed_sp": round(committed_sp, 2),
-        "delivered_sp": round(delivered_sp, 2),
+        "committed_sp": committed_sp,
+        "delivered_sp": delivered_sp,
         "say_do_ratio": _pct(delivered_sp, committed_sp),
         "avg_hu_size_sp": _avg(hu_sp_values),
         "bug_task_count": int(len(bug_df)),
@@ -2054,7 +2058,7 @@ def build_scope_quality_metrics(df, hu_storypoints, kpis):
         "scope_creep_tasks": int(len(creep_df)),
         "scope_creep_sp": creep_sp,
         "scope_creep_task_pct": _pct(len(creep_df), len(df)),
-        "scope_creep_sp_pct": _pct(creep_sp, committed_sp),
+        "scope_creep_sp_pct": _pct(creep_sp, board_sp),
     }
 
 
@@ -2083,8 +2087,12 @@ def build_time_metrics(df, sprint_start, sprint_end, export_date, hu_storypoints
     calendar_elapsed = max(calendar_total_days - calendar_remaining_days, 0)
 
     weights = _task_storypoint_weights(df, hu_storypoints)
-    if weights:
-        total_work = float(scope_metrics.get("committed_sp") or sum(hu_storypoints.values()) or 0)
+    if scope_metrics.get("committed_sp") is not None:
+        total_work = float(scope_metrics["committed_sp"])
+        done_work = float(scope_metrics["delivered_sp"])
+        unit = "SP"
+    elif weights:
+        total_work = float(sum(hu_storypoints.values()))
         done_work = sum(weights.get(idx, 0.0) for idx, row in df.iterrows() if bool(row.get("done_kpi", False)))
         unit = "SP"
     else:
@@ -5914,7 +5922,7 @@ def _collect_warnings(df, kpis, hu_list, sprint_start, sprint_end, export_date,
     return warns
 
 
-def compute_json(input_path, ignore_labels=None, planner_format="legacy"):
+def compute_json(input_path, ignore_labels=None, planner_format="legacy", *, committed_hus=None):
     """
     Pipeline parcial: le o export do Planner e retorna um dict JSON-serializavel
     com todos os dados computados (KPIs, burndown, CFD, WIP, CTS, etc.).
@@ -5946,6 +5954,19 @@ def compute_json(input_path, ignore_labels=None, planner_format="legacy"):
     hu_list = build_hu_list(df_all)
     hu_full_names = build_hu_full_names(df_all)
     hu_storypoints_labels, total_sp_labels = build_hu_storypoints_from_labels(df_all)
+    committed_hus = parse_committed_hus(committed_hus, hu_full_names, hu_storypoints_labels)
+    kpis["board_sp_hu_count"] = len(hu_storypoints_labels)
+    committed_sp = delivered_sp = completion_dates = None
+    if committed_hus is not None:
+        committed_weights = {hu: hu_storypoints_labels[hu] for hu in committed_hus}
+        committed_tasks = df_all[df_all["hu"].isin(committed_hus)]
+        completion_dates = {}
+        for hu, tasks in committed_tasks.groupby("hu"):
+            if tasks["done_kpi"].all():
+                dates = tasks["date_done"]
+                completion_dates[hu] = dates.max() if dates.notna().all() else None
+        committed_sp = sum(committed_weights.values())
+        delivered_sp = sum(committed_weights[hu] for hu in completion_dates)
     hu_scope_events = build_hu_scope_events_from_labels(
         df_all,
         sprint_start=sprint_start,
@@ -5956,7 +5977,9 @@ def compute_json(input_path, ignore_labels=None, planner_format="legacy"):
     if hu_storypoints_labels:
         _enrich_kpis_with_hu_storypoints(kpis, df_scope, hu_storypoints_labels)
     flow_metrics = build_flow_metrics(df_scope, sprint_start, sprint_end, kpis)
-    scope_quality_metrics = build_scope_quality_metrics(df_scope, hu_storypoints_labels, kpis)
+    scope_quality_metrics = build_scope_quality_metrics(
+        df_scope, hu_storypoints_labels, kpis, committed_sp=committed_sp, delivered_sp=delivered_sp,
+    )
     time_metrics = build_time_metrics(
         df_scope, sprint_start, sprint_end, export_date, hu_storypoints_labels, scope_quality_metrics
     )
@@ -5976,6 +5999,8 @@ def compute_json(input_path, ignore_labels=None, planner_format="legacy"):
     warnings = _collect_warnings(
         df_all, kpis, hu_list, sprint_start, sprint_end, export_date, roadmap_items
     )
+    if completion_dates is not None and any(day is None for day in completion_dates.values()):
+        warnings.append({"nivel": "info", "msg": "Há HUs comprometidas concluídas sem a data de fechamento de todas as tarefas. Seus SP entram no total entregue, mas não têm data de baixa no burndown."})
 
     cfd_dates, cfd_todo, cfd_doing, cfd_done = build_cfd(
         df_scope, sprint_start, export_date, sprint_end=sprint_end
@@ -5989,9 +6014,15 @@ def compute_json(input_path, ignore_labels=None, planner_format="legacy"):
 
     burndown_rows = _precompute_burndown(df_scope, sprint_start, sprint_end, export_date)
     burndown_hu_rows = _precompute_burndown_hu(df_scope, sprint_start, sprint_end, export_date, hu_scope_events)
-    burndown_sp_rows = _precompute_burndown_sp(
-        df_scope, sprint_start, sprint_end, export_date, hu_storypoints_labels, hu_scope_events
-    )
+    if committed_hus is not None:
+        burndown_sp_rows = _precompute_burndown_sp(
+            committed_tasks, sprint_start, sprint_end, export_date, committed_weights,
+            completion_dates=completion_dates,
+        )
+    else:
+        burndown_sp_rows = _precompute_burndown_sp(
+            df_scope, sprint_start, sprint_end, export_date, hu_storypoints_labels, hu_scope_events,
+        )
     nao_prev_burn_rows, nao_prev_scope_events = _precompute_nao_prev_task_burn(
         df_scope, sprint_start, sprint_end, export_date
     )
@@ -6027,6 +6058,7 @@ def compute_json(input_path, ignore_labels=None, planner_format="legacy"):
             "export_date":  _d(export_date),
             "nome_arquivo": os.path.basename(input_path),
             "planner_format": detected_planner_format,
+            "committed_hus": committed_hus,
             "projeto":      gestao_meta.get("projeto", sprint_name),
             "gerente":      gestao_meta.get("gerente", ""),
             "linkedin":     gestao_meta.get("linkedin", ""),
@@ -6075,9 +6107,9 @@ def compute_json(input_path, ignore_labels=None, planner_format="legacy"):
         },
         "burndown_sp": {
             "rows":     burndown_sp_rows,
-            "total_sp": total_sp_labels,
-            "hu_sp":    hu_storypoints_labels,
-            "scope_events": serialized_scope_events,
+            "total_sp": committed_sp if committed_hus is not None else total_sp_labels,
+            "hu_sp":    committed_weights if committed_hus is not None else hu_storypoints_labels,
+            "scope_events": [] if committed_hus is not None else serialized_scope_events,
         },
         "burndown_nao_prev": {
             "rows": nao_prev_burn_rows,

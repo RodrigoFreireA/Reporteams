@@ -14,7 +14,8 @@ const COMPARATIVE_PLOT_IDS = [
 ];
 
 const COMPARATIVE_DETAIL_METRICS = [
-  { label: 'Story points', path: ['kpis', 'storypoints'], decimals: 1 },
+  { label: 'SP no board', path: ['kpis', 'storypoints'], decimals: 1 },
+  { label: 'SP comprometidos', path: ['scope_quality_metrics', 'committed_sp'], decimals: 1 },
   { label: 'Tarefas totais', path: ['kpis', 'total'] },
   { label: 'Concluidas', path: ['kpis', 'done'] },
   { label: 'Pendentes', path: ['kpis', 'pending'] },
@@ -241,12 +242,12 @@ function normalizeComparativeReportData(data) {
   )) {
     delete payload.flow_metrics;
   }
-  if (!metricObjectReady('scope_quality_metrics') || (
-    !hasNumber(payload.scope_quality_metrics.say_do_ratio)
-    && !hasNumber(payload.scope_quality_metrics.committed_sp)
-    && !hasNumber(payload.scope_quality_metrics.delivered_sp)
-  )) {
+  if (!metricObjectReady('scope_quality_metrics')) {
     delete payload.scope_quality_metrics;
+  } else if (!payload.meta.committed_hus?.length) {
+    payload.scope_quality_metrics.committed_sp = null;
+    payload.scope_quality_metrics.delivered_sp = null;
+    payload.scope_quality_metrics.say_do_ratio = null;
   }
   if (!metricObjectReady('time_metrics')) {
     delete payload.time_metrics;
@@ -409,7 +410,7 @@ function renderComparativeKpis(items) {
           <span>${esc(data.meta?.export_date || item.report?.export_date || '')}</span>
         </div>
         <div class="comparative-card-grid">
-          <span><em>SP</em><strong>${fmtComparativeValue(kpis.storypoints, 1)}</strong></span>
+          <span><em>SP no board</em><strong>${fmtComparativeValue(kpis.storypoints, 1)}</strong></span>
           <span><em>Conclusao</em><strong>${fmtComparativeValue(donePct, 1, '%')}</strong></span>
           <span><em>Concluidas</em><strong>${fmtComparativeValue(kpis.done)}</strong></span>
           <span><em>Pendentes</em><strong>${fmtComparativeValue(kpis.pending)}</strong></span>
@@ -436,7 +437,7 @@ function renderComparativeCharts(items) {
   const labels = comparativeLabels(items);
 
   Plotly.react('comparativeDeliveryPlot', [
-    { type: 'bar', name: 'Story points', x: labels, y: chartData(items, data => data.kpis?.storypoints), marker: { color: pc(0) } },
+    { type: 'bar', name: 'SP no board', x: labels, y: chartData(items, data => data.kpis?.storypoints), marker: { color: pc(0) } },
     { type: 'bar', name: 'Concluidas', x: labels, y: chartData(items, data => data.kpis?.done), marker: { color: pc(1) } },
     { type: 'bar', name: 'Pendentes', x: labels, y: chartData(items, data => data.kpis?.pending), marker: { color: pc(2) } },
     { type: 'bar', name: 'Nao previstas', x: labels, y: chartData(items, data => data.kpis?.nao_prev), marker: { color: pc(3) } },

@@ -9,7 +9,7 @@
   <script>
     window.Plotly || document.write('<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"><\/script>');
   </script>
-  <link rel="stylesheet" href="/static/css/app.css?v=planner-rules-visual-20260909">
+  <link rel="stylesheet" href="/static/css/app.css?v=sprint-commitment-20261125">
 </head>
 
 <body class="public-mode">
@@ -250,6 +250,18 @@
             <div class="prog-text" id="progText">Enviando…</div>
           </div>
           <div class="upload-error" id="uploadError"></div>
+          <dialog class="commitment-dialog" id="commitmentDialog" aria-labelledby="commitmentTitle">
+            <form method="dialog">
+              <h2 id="commitmentTitle">HUs comprometidas na sprint</h2>
+              <p>Selecione as HUs assumidas no planejamento. As tarefas das outras HUs continuam no dashboard.</p>
+              <div class="commitment-options" id="commitmentOptions"></div>
+              <div class="commitment-actions">
+                <output id="commitmentTotal" aria-live="polite"></output>
+                <button type="submit" class="btn-small" value="cancel">Cancelar</button>
+                <button type="submit" class="auth-submit" value="save" id="commitmentSave"></button>
+              </div>
+            </form>
+          </dialog>
         </section>
       </div>
       <div class="library-card">
@@ -770,10 +782,10 @@
 <script src="/static/js/reports.js?v=team-dashboard-navigation-20260909"></script>  <!-- 6. biblioteca de relatórios -->
 <script src="/static/js/admin.js?v=team-management-20260909"></script>    <!-- 7. painel admin -->
 <script src="/static/js/teams.js?v=team-management-20260909"></script>     <!-- 8. equipes e sprints -->
-<script src="/static/js/upload.js?v=team-management-20260909"></script>   <!-- 9. upload de arquivo -->
-<script src="/static/js/consolidated.js?v=builder-roadmap-layout-20260831"></script><!-- 9. montador de relatorio -->
-<script src="/static/js/comparative.js?v=team-management-20260909"></script><!-- 10. comparativo mensal -->
-<script src="/static/js/charts.js?v=report-print-reflow-20260831"></script>   <!-- 10. renderização de gráficos -->
+<script src="/static/js/upload.js?v=sprint-commitment-20261125"></script>   <!-- 9. upload de arquivo -->
+<script src="/static/js/consolidated.js?v=sprint-commitment-20261125"></script><!-- 9. montador de relatorio -->
+<script src="/static/js/comparative.js?v=sprint-commitment-20261125"></script><!-- 10. comparativo mensal -->
+<script src="/static/js/charts.js?v=sprint-commitment-20261125"></script>   <!-- 10. renderização de gráficos -->
 <script src="/static/js/dashboard.js?v=dashboard-visibility-20260923"></script><!-- 11. dashboard principal -->
 <script src="/static/js/app.js?v=kpi-calendar-deadline-20260504"></script>      <!-- 12. init e resize -->
 

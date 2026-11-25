@@ -820,6 +820,7 @@ def _format_number(value) -> str:
 def _build_summary_facts(data: dict) -> dict:
     meta = data.get("meta") or {}
     kpis = data.get("kpis") or {}
+    commitment = (data.get("scope_quality_metrics") or {}) if meta.get("committed_hus") else {}
     warnings = data.get("warnings") or []
     warning_messages = []
     for item in warnings[:4]:
@@ -845,6 +846,8 @@ def _build_summary_facts(data: dict) -> dict:
             "backlog_total": _safe_int(kpis.get("backlog_total")),
             "sem_hu": _safe_int(kpis.get("sem_hu")),
             "storypoints": _round_number(kpis.get("storypoints")),
+            "committed_sp": _round_number(commitment.get("committed_sp")),
+            "delivered_sp": _round_number(commitment.get("delivered_sp")),
             "pct_entrega": _round_number((_safe_float(kpis.get("pct_entrega")) or 0) * 100),
             "ct_task": _round_number(kpis.get("ct_task")),
             "lt_task": _round_number(kpis.get("lt_task")),
@@ -891,8 +894,13 @@ def _heuristic_summary_from_facts(facts: dict) -> str:
 
     if kpis.get("storypoints"):
         lines.append(
-            f"- Escopo: { _format_number(kpis.get('storypoints')) } story points mapeados, "
+            f"- Escopo: { _format_number(kpis.get('storypoints')) } SP no board, "
             f"{kpis.get('hu_count', 0)} HU(s) e {kpis.get('stakeholders', 0)} responsáveis diferentes no recorte."
+        )
+    if kpis.get("committed_sp") is not None:
+        lines.append(
+            f"- Compromisso da sprint: {_format_number(kpis.get('delivered_sp'))} de "
+            f"{_format_number(kpis['committed_sp'])} SP comprometidos entregues."
         )
 
     wip_items = current_wip.get("items") or []

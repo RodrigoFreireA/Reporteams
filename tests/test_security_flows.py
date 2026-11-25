@@ -2,6 +2,9 @@ import os
 import tempfile
 import unittest
 import json
+from io import BytesIO
+
+from openpyxl import Workbook
 
 
 _fd, _db_path = tempfile.mkstemp(suffix=".db")
@@ -170,6 +173,56 @@ class SecurityFlowTests(unittest.TestCase):
         self.assertEqual(
             response.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin"
         )
+
+    def test_planner_upload_previews_and_saves_only_the_confirmed_commitment(self):
+        auth = self.bootstrap_admin()
+        headers = {"X-CSRF-Token": auth["csrf_token"]}
+        workbook = Workbook()
+        tasks = workbook.active
+        tasks.append(["Task name", "Bucket name", "Status", "Created date", "Start date", "Date completed", "Labels"])
+        tasks.append(["HU001 - Entrega [3SP]", "Concluído", "Concluída", "2026-05-01", "2026-05-01", "2026-05-04", ""])
+        tasks.append(["HU001 - Testar", "Concluído", "Concluída", "2026-05-01", "2026-05-04", "2026-05-06", ""])
+        tasks.append(["HU002 - Outro trabalho [5SP]", "Concluído", "Concluída", "2026-05-01", "2026-05-01", "2026-05-02", ""])
+        tasks.append(["HU003 - Em curso [8SP]", "Backlog", "Não iniciado", "2026-05-01", "", "", ""])
+        plan = workbook.create_sheet("Nome do plano")
+        plan.append(["Nome do plano", "Sprint"])
+        plan.append(["Exportado em", "2026-05-08"])
+        source = BytesIO()
+        workbook.save(source)
+
+        def upload(**form):
+            return self.client.post(
+                "/upload", headers=headers,
+                data={"arquivo": (BytesIO(source.getvalue()), "planner.xlsx"), **form},
+            )
+
+        preview = upload(preview_commitment="1")
+        self.assertEqual(preview.status_code, 200, preview.data)
+        self.assertEqual([(hu["id"], hu["sp"]) for hu in preview.json["commitment_options"]],
+                         [("HU001", 3), ("HU002", 5), ("HU003", 8)])
+        self.assertEqual(upload(committed_hus="HU999").status_code, 400)
+        with self.app.app_context():
+            self.assertEqual(app_module.Report.query.count(), 0)
+
+        response = upload(committed_hus="HU001,HU003,HU001")
+        self.assertEqual(response.status_code, 200, response.data)
+        data = response.json["data"]
+        self.assertEqual(data["meta"]["committed_hus"], ["HU001", "HU003"])
+        self.assertEqual(data["kpis"]["storypoints"], 16)
+        self.assertEqual(data["kpis"]["done"], 3)
+        self.assertEqual(data["scope_quality_metrics"]["committed_sp"], 11)
+        self.assertEqual(data["scope_quality_metrics"]["delivered_sp"], 3)
+        remaining = {row[0]: row[2] for row in data["burndown_sp"]["rows"]}
+        self.assertEqual(remaining["2026-05-05"], 11)
+        self.assertEqual(remaining["2026-05-06"], 8)
+        with self.app.app_context():
+            saved = app_module.db.session.get(app_module.Report, response.json["report"]["id"])
+            self.assertEqual(json.loads(saved.payload_json)["meta"]["committed_hus"], ["HU001", "HU003"])
+
+        skipped = upload().json["data"]
+        self.assertIsNone(skipped["scope_quality_metrics"]["committed_sp"])
+        self.assertIsNone(skipped["scope_quality_metrics"]["delivered_sp"])
+        self.assertEqual(skipped["kpis"]["storypoints"], 16)
 
     def test_sensitive_project_files_are_not_served(self):
         for path in ("/.env", "/instance/reportchart.db", "/docs/open-source-release.md"):

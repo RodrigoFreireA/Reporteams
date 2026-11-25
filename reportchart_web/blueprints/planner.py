@@ -15,6 +15,7 @@ from werkzeug.utils import secure_filename
 
 from reportchart_web.extensions import db
 from reportchart_web.models import Report, Team
+from reportchart_web.planner.identifiers import InvalidSprintCommitment
 from reportchart_web.repositories import RoadmapRepository
 from reportchart_web.security import csrf_required, login_required
 
@@ -96,6 +97,8 @@ def create_planner_blueprint(services: PlannerServices) -> Blueprint:
             return jsonify({"ok": False, "erro": "Formato de Excel nao reconhecido."}), 400
 
         ignore_labels = request.form.get("rotulos_ignorar", "").strip() or None
+        preview_commitment = request.form.get("preview_commitment") == "1"
+        committed_hus = None if preview_commitment else request.form.get("committed_hus")
         selected_roadmap = None
         selected_roadmap_items: list[list[object]] = []
         manual_roadmap_items: list[list[object]] = []
@@ -134,7 +137,17 @@ def create_planner_blueprint(services: PlannerServices) -> Blueprint:
             return jsonify({"ok": False, "erro": "Arquivo .xlsx inválido."}), 400
 
         try:
-            data = services.compute_json(input_path, ignore_labels=ignore_labels, planner_format=planner_format)
+            data = services.compute_json(
+                input_path, ignore_labels=ignore_labels, planner_format=planner_format,
+                committed_hus=committed_hus,
+            )
+            if preview_commitment:
+                hu_names = data["hu_full_names"]
+                options = [
+                    {"id": hu, "name": hu_names[hu], "sp": sp}
+                    for hu, sp in sorted(data["burndown_sp"]["hu_sp"].items())
+                ]
+                return jsonify({"ok": True, "commitment_options": options})
             upload_roadmap_items = selected_roadmap_items or manual_roadmap_items
             associated_roadmap = selected_roadmap
             if upload_roadmap_items:
@@ -184,6 +197,8 @@ def create_planner_blueprint(services: PlannerServices) -> Blueprint:
                 "data": data,
                 "roadmap": services.serialize_roadmap(associated_roadmap) if associated_roadmap else None,
             })
+        except InvalidSprintCommitment as exc:
+            return jsonify({"ok": False, "erro": str(exc)}), 400
         except ValueError:
             return jsonify({"ok": False, "erro": "Dados do Planner inválidos."}), 400
         except Exception:

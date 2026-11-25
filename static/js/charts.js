@@ -1440,13 +1440,7 @@ function ensureAdvancedMetrics() {
   }
   if (!dashData.scope_quality_metrics && tasks.length) {
     const weights = taskStoryPointWeights(tasks, huSp);
-    const committedSp = Number(dashData.burndown_sp?.total_sp || k.storypoints || 0);
-    const deliveredSp = hasSp
-      ? Object.entries(huSp).reduce((sum, [hu, sp]) => {
-          const rows = huTasks[hu] || [];
-          return rows.length && rows.every(task => taskDoneDate(task)) ? sum + Number(sp || 0) : sum;
-        }, 0)
-      : 0;
+    const boardSp = Number(k.storypoints || dashData.burndown_sp?.total_sp || 0);
     const creepRows = tasks.filter(task => {
       const text = normalizeText(`${task.labels || ''};${task.bucket || ''}`);
       return text.includes('imprevisto') || text.includes('nao mapeado') || text.includes('nao previsto');
@@ -1454,15 +1448,15 @@ function ensureAdvancedMetrics() {
     const creepSp = creepRows.reduce((sum, task) => sum + (weights[tasks.indexOf(task)] || 0), 0);
     const huSpValues = Object.values(huSp).map(Number).filter(v => Number.isFinite(v) && v > 0);
     dashData.scope_quality_metrics = {
-      committed_sp: committedSp,
-      delivered_sp: deliveredSp,
-      say_do_ratio: pctMetric(deliveredSp, committedSp),
+      committed_sp: null,
+      delivered_sp: null,
+      say_do_ratio: null,
       avg_hu_size_sp: avgMetric(huSpValues),
       ...qualityTagMetrics,
       scope_creep_tasks: creepRows.length,
       scope_creep_sp: creepSp,
       scope_creep_task_pct: pctMetric(creepRows.length, tasks.length),
-      scope_creep_sp_pct: pctMetric(creepSp, committedSp),
+      scope_creep_sp_pct: pctMetric(creepSp, boardSp),
     };
   } else if (qualityTagMetrics) {
     dashData.scope_quality_metrics = {
@@ -3150,18 +3144,20 @@ function renderFlowMetrics(body) {
 function renderScopeQualityMetrics(body) {
   ensureAdvancedMetrics();
   const m = dashData.scope_quality_metrics || {};
+  const hasCommitment = Boolean(dashData.meta?.committed_hus?.length);
+  const committedSp = hasCommitment ? m.committed_sp : null;
+  const deliveredSp = hasCommitment ? m.delivered_sp : null;
   const sayDoInfo = [
     'Compara Story Points entregues com Story Points prometidos.',
-    `SP entregues: ${formatMetric(m.delivered_sp, 1)}.`,
-    `SP prometidos: ${formatMetric(m.committed_sp, 1)}.`,
+    `SP entregues: ${formatMetric(deliveredSp, 1)}.`,
+    `SP comprometidos: ${committedSp == null ? 'Não informado' : formatMetric(committedSp, 1)}.`,
     'Tarefas sem HU/SP n\u00e3o alteram este ratio.',
   ];
   const committedSpInfo = [
-    'Total de Story Points planejados para a sprint.',
-    'Vem da soma dos SP mapeados nas HUs ou do KPI de storypoints.',
+    'Soma dos Story Points das HUs selecionadas como compromisso no upload.',
   ];
   const deliveredSpInfo = [
-    'Story Points de HUs conclu\u00eddas.',
+    'Story Points das HUs comprometidas que foram concluídas.',
     'Uma HU s\u00f3 entra como entregue quando todas as tarefas daquela HU est\u00e3o conclu\u00eddas.',
   ];
   const bugDensityInfo = [
@@ -3201,9 +3197,9 @@ function renderScopeQualityMetrics(body) {
     {
       title: 'Compromisso',
       items: [
-        { label:'Say/Do Ratio', value:formatMetricPct(m.say_do_ratio), unit:'SP entregue / prometido', info: sayDoInfo },
-        { label:'SP prometidos', value:formatMetric(m.committed_sp, 1), unit:'SP', info: committedSpInfo },
-        { label:'SP entregues', value:formatMetric(m.delivered_sp, 1), unit:'SP', info: deliveredSpInfo },
+        { label:'Say/Do Ratio', value:formatMetricPct(hasCommitment ? m.say_do_ratio : null), unit:'SP entregue / prometido', info: sayDoInfo },
+        { label:'SP comprometidos', value:committedSp == null ? 'Não informado' : formatMetric(committedSp, 1), unit:'SP', info: committedSpInfo },
+        { label:'SP entregues', value:formatMetric(deliveredSp, 1), unit:'SP', info: deliveredSpInfo },
       ],
     },
     {
@@ -3456,7 +3452,7 @@ function renderKpiPieCharts() {
 function buildKpiChartsHtml() {
   const charts = [
     { id: 'kpiPieTasks', title: 'Conclu\u00eddas x Pendentes', subtitle: 'Tarefas' },
-    { id: 'kpiPieStorypoints', title: 'Conclu\u00eddos x Pendentes', subtitle: 'Story Points' },
+    { id: 'kpiPieStorypoints', title: 'Conclu\u00eddos x Pendentes', subtitle: dashData.meta?.committed_hus ? 'SP comprometidos' : 'SP no board' },
     { id: 'kpiPieLeadCycleSp', title: 'Lead x Cycle', subtitle: 'Por SP' },
     { id: 'kpiPieLeadCycleHu', title: 'Lead x Cycle', subtitle: 'Por HU' },
     { id: 'kpiPieLeadCycleTask', title: 'Lead x Cycle', subtitle: 'Por tarefa' },
@@ -3498,8 +3494,9 @@ function renderSprintKPIs(body) {
 
   const total = Number(k.total || 0);
   const pct = total ? Math.round(Number(k.done || 0) / total * 100) : 0;
-  const storyTotal = num(dashData.burndown_sp?.total_sp, k.storypoints);
-  const huSpCount = Object.keys(dashData.burndown_sp?.hu_sp || {}).length;
+  const storyTotal = num(k.storypoints, dashData.burndown_sp?.total_sp);
+  const committedSp = dashData.meta?.committed_hus ? dashData.scope_quality_metrics?.committed_sp : null;
+  const huSpCount = k.board_sp_hu_count ?? Object.keys(dashData.burndown_sp?.hu_sp || {}).length;
   const huCount = num(k.hu_count, Array.isArray(dashData.hu_list) ? dashData.hu_list.length : null, huSpCount);
   const sprintDays = getSprintDayMetrics(m);
   const timeMetrics = dashData.time_metrics || {};
@@ -3538,7 +3535,7 @@ function renderSprintKPIs(body) {
     'Conta pessoas distintas com atribui\u00e7\u00e3o preenchida.',
   ];
   const storyPointsInfo = [
-    'Total de Story Points planejados nas HUs.',
+    'Soma dos Story Points de todas as HUs pontuadas no board importado.',
     `HUs com SP mapeado: ${formatMetric(huSpCount, 0)}.`,
     'Os SP s\u00e3o extra\u00eddos da HU no t\u00edtulo ou nos r\u00f3tulos quando dispon\u00edveis.',
   ];
@@ -3598,12 +3595,14 @@ function renderSprintKPIs(body) {
         { label:'Qtd de HUs', value:fmt(huCount), unit:'HUs', info: huInfo },
         { label:'Respons\u00e1veis nomeados', value:fmt(k.stakeholders), unit:'pessoas', info: stakeholdersInfo },
         {
-          label:'Story Points',
+          label:'SP no board',
           value: storyTotal ? fmt(storyTotal) : '-',
           unit:'SP',
-          sub: dashData.burndown_sp?.total_sp ? `${huSpCount} HUs com SP` : null,
+          sub: storyTotal ? `${huSpCount} HUs com SP` : null,
           info: storyPointsInfo,
         },
+        { label:'SP comprometidos', value:committedSp == null ? 'Não informado' : fmt(committedSp), unit:'SP',
+          sub: committedSp == null ? null : `${dashData.meta.committed_hus.length} HUs selecionadas` },
         { label:'Fora de HU', value:k.sem_hu, unit:'tarefas', info: outsideHuInfo },
       ],
     },
@@ -3657,8 +3656,8 @@ function renderKPIs(body) {
     { label:'Lead Time (tarefa)',  value:k.lt_task  != null ? k.lt_task.toFixed(1)  : '—', unit:'dias' },
     { label:'Cycle Time (HU)',     value:k.ct_hu  != null ? k.ct_hu.toFixed(1)  : '—', unit:'dias' },
     { label:'Lead Time (HU)',      value:k.lt_hu  != null ? k.lt_hu.toFixed(1)  : '—', unit:'dias' },
-    { label:'Story Points', value: (dashData.burndown_sp?.total_sp || k.storypoints || 0) || '—', unit:'SP',
-      sub: dashData.burndown_sp?.total_sp ? `${Object.keys(dashData.burndown_sp.hu_sp||{}).length} HUs com SP` : null },
+    { label:'SP no board', value:k.storypoints ?? dashData.burndown_sp?.total_sp ?? '—', unit:'SP' },
+    { label:'SP comprometidos', value:dashData.meta?.committed_hus ? dashData.scope_quality_metrics?.committed_sp : 'Não informado', unit:'SP' },
     { label:'% Concluído',         value:pct, unit:'%' },
   ];
   body.innerHTML = `<div class="kpi-grid">${
